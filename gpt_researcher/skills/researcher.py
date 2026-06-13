@@ -151,8 +151,8 @@ class ResearchConductor:
             research_data = await self._get_context_by_web_search(self.researcher.query, [], self.researcher.query_domains)
         elif self.researcher.report_source == ReportSource.Local.value:
             self.logger.info("Using local search")
-            document_data = await DocumentLoader(self.researcher.cfg.doc_path).load()
-            self.logger.info(f"Loaded {len(document_data)} documents")
+            document_data = await self._load_local_documents()
+            self.logger.info(f"Loaded {len(document_data)} document chunks")
             if self.researcher.vector_store:
                 self.researcher.vector_store.load(document_data)
 
@@ -162,7 +162,7 @@ class ResearchConductor:
             if self.researcher.document_urls:
                 document_data = await OnlineDocumentLoader(self.researcher.document_urls).load()
             else:
-                document_data = await DocumentLoader(self.researcher.cfg.doc_path).load()
+                document_data = await self._load_local_documents()
             if self.researcher.vector_store:
                 self.researcher.vector_store.load(document_data)
             docs_context = await self._get_context_by_web_search(self.researcher.query, document_data, self.researcher.query_domains)
@@ -209,6 +209,48 @@ class ResearchConductor:
 
         self.logger.info(f"Research completed. Context size: {len(str(self.researcher.context))}")
         return self.researcher.context
+
+    async def _load_local_documents(self) -> list:
+        """加载本地文献：优先使用 FAISS 索引检索，无索引时降级到全量 DocumentLoader。
+
+        Returns:
+            document_data 列表: [{"raw_content": str, "url": str}]
+        """
+        doc_path = self.researcher.cfg.doc_path
+        query = self.researcher.query
+
+        # 尝试使用 FAISS 文献库
+        try:
+            from ..document_library import LibraryManager
+
+            library = LibraryManager(doc_path, self.researcher.cfg)
+            if library.has_index():
+                k = getattr(self.researcher.cfg, "similarity_top_k", 8)
+                # 从 kwargs 获取文件名过滤列表（子集研究）
+                filenames = getattr(self.researcher, 'kwargs', {}).get('filenames')
+                document_data = await library.search(query, k=k, filenames=filenames)
+                filter_msg = f"(限定 {len(filenames)} 篇文献)" if filenames else ""
+                if document_data:
+                    self.logger.info(f"FAISS 文献库检索成功: 返回 {len(document_data)} 个 chunk {filter_msg}")
+                    await stream_output(
+                        "logs",
+                        "library_search",
+                        f"[LIBRARY] 从文献库检索到 {len(document_data)} 个相关片段{filter_msg}",
+                        self.researcher.websocket,
+                    )
+                    return document_data
+                else:
+                    self.logger.warning("FAISS 检索返回空结果，降级到全量加载")
+            else:
+                self.logger.info("FAISS 索引不存在，使用传统全量加载")
+        except Exception as e:
+            self.logger.warning(f"文献库检索失败，降级到全量加载: {e}")
+
+        # 降级到原来的全量 DocumentLoader
+        self.logger.info("Using fallback DocumentLoader (full load)")
+        document_data = await DocumentLoader(doc_path).load()
+        self.logger.info(f"Fallback loaded {len(document_data)} documents")
+        return document_data
 
     async def _get_context_by_urls(self, urls):
         """Scrapes and compresses the context from the given urls"""

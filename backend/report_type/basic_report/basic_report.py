@@ -22,6 +22,7 @@ class BasicReport:
         mcp_configs=None,
         mcp_strategy=None,
         max_search_results=None,
+        **kwargs,
     ):
         self.query = query
         self.query_domains = query_domains
@@ -56,6 +57,9 @@ class BasicReport:
             gpt_researcher_params["mcp_configs"] = mcp_configs
         if mcp_strategy is not None:
             gpt_researcher_params["mcp_strategy"] = mcp_strategy
+
+        # Pass through extra kwargs (e.g. filenames) to GPTResearcher
+        gpt_researcher_params.update(kwargs)
 
         self.gpt_researcher = GPTResearcher(**gpt_researcher_params)
 

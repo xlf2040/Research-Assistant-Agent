@@ -38,7 +38,7 @@ from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect, File, Uplo
 from contextlib import asynccontextmanager
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse, JSONResponse, HTMLResponse
+from fastapi.responses import FileResponse, JSONResponse, HTMLResponse, Response
 from pydantic import BaseModel, ConfigDict
 
 # Add the parent directory to sys.path to make sure we can import from server
@@ -362,9 +362,31 @@ async def generate_report(research_request: ResearchRequest, background_tasks: B
 async def list_files():
     if not os.path.exists(DOC_PATH):
         os.makedirs(DOC_PATH, exist_ok=True)
-    files = os.listdir(DOC_PATH)
-    print(f"Files in {DOC_PATH}: {files}")
-    return {"files": files}
+
+    # 尝试从 LibraryManager 获取带标签的文件列表
+    try:
+        from gpt_researcher.document_library import LibraryManager
+        library = LibraryManager(DOC_PATH)
+        docs = library.list_documents()
+        # 同时返回 files（文件名列表，兼容旧前端）和 documents（带标签）
+        files = [d["filename"] for d in docs]
+
+        # 也包含目录中存在但未索引的文件
+        all_files = [
+            f for f in os.listdir(DOC_PATH)
+            if os.path.isfile(os.path.join(DOC_PATH, f)) and not f.startswith(".")
+        ]
+        indexed_names = set(files)
+        for f in all_files:
+            if f not in indexed_names:
+                docs.append({"filename": f, "primary_field": "", "subfields": [], "keywords": [], "summary": "", "chunks": 0, "status": "unindexed"})
+                files.append(f)
+
+        return {"files": files, "documents": docs}
+    except Exception as e:
+        logger.warning(f"LibraryManager 获取文件列表失败，降级: {e}")
+        files = os.listdir(DOC_PATH)
+        return {"files": files}
 
 
 @app.post("/api/multi_agents")
@@ -380,6 +402,311 @@ async def upload_file(file: UploadFile = File(...)):
 @app.delete("/files/{filename}")
 async def delete_file(filename: str):
     return await handle_file_deletion(filename, DOC_PATH)
+
+
+@app.get("/api/library/tags")
+async def get_library_tags():
+    """获取所有文献标签的聚合统计。"""
+    try:
+        from gpt_researcher.document_library import LibraryManager
+        library = LibraryManager(DOC_PATH)
+        tags = library.aggregate_tags()
+        return tags
+    except Exception as e:
+        logger.error(f"获取标签统计失败: {e}")
+        return {"primary_fields": {}, "subfields": {}, "keywords": {}}
+
+
+@app.post("/api/library/reindex")
+async def reindex_library(background_tasks: BackgroundTasks):
+    """触发文献库全量重建（后台任务）。"""
+    from gpt_researcher.document_library import LibraryManager
+
+    async def _do_reindex():
+        try:
+            library = LibraryManager(DOC_PATH)
+            await library.reindex_all()
+            logger.info("文献库全量重建完成")
+        except Exception as e:
+            logger.error(f"文献库重建失败: {e}")
+
+    background_tasks.add_task(_do_reindex)
+    return {"message": "重建任务已启动，请稍后刷新查看结果"}
+
+
+@app.get("/api/library/manifest/{filename}")
+async def get_document_manifest(filename: str):
+    """获取单篇文献的详细元信息。"""
+    try:
+        from gpt_researcher.document_library import LibraryManager
+        library = LibraryManager(DOC_PATH)
+        entry = library.list_documents()
+        doc = next((d for d in entry if d.get("filename") == filename), None)
+        if doc:
+            return doc
+        raise HTTPException(status_code=404, detail="文献未找到")
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"获取文献详情失败: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ── 文献库扩展接口 ──
+
+@app.get("/api/library/documents")
+async def get_library_documents():
+    """获取全量文献元信息（含 user_tags）。"""
+    try:
+        from gpt_researcher.document_library import LibraryManager, UserTagsStore
+        library = LibraryManager(DOC_PATH)
+        docs = library.list_documents()
+
+        # 同时包含目录中存在但未索引的文件
+        all_files = [
+            f for f in os.listdir(DOC_PATH)
+            if os.path.isfile(os.path.join(DOC_PATH, f)) and not f.startswith(".")
+        ] if os.path.isdir(DOC_PATH) else []
+        indexed_names = {d["filename"] for d in docs}
+        for f in all_files:
+            if f not in indexed_names:
+                docs.append({"filename": f, "primary_field": "", "subfields": [], "keywords": [], "summary": "", "chunks": 0, "status": "unindexed"})
+
+        # 附加用户标签
+        user_tags_store = UserTagsStore(DOC_PATH)
+        all_assignments = user_tags_store.get_all_assignments()
+        for doc in docs:
+            doc["user_tags"] = all_assignments.get(doc["filename"], [])
+
+        return {"documents": docs, "user_tags": user_tags_store.list_tags()}
+    except Exception as e:
+        logger.error(f"获取文献列表失败: {e}")
+        return {"documents": [], "user_tags": []}
+
+
+@app.patch("/api/library/documents/{filename}")
+async def rename_document(filename: str, request: Request):
+    """重命名文献。"""
+    data = await request.json()
+    new_name = data.get("new_name", "").strip()
+    if not new_name:
+        raise HTTPException(status_code=400, detail="新文件名不能为空")
+
+    # 安全检查：防止路径穿越
+    safe_old = os.path.basename(filename)
+    safe_new = os.path.basename(new_name)
+    if safe_new != new_name or ".." in new_name:
+        raise HTTPException(status_code=400, detail="文件名不合法")
+
+    old_path = os.path.join(DOC_PATH, safe_old)
+    new_path = os.path.join(DOC_PATH, safe_new)
+    if not os.path.isfile(old_path):
+        raise HTTPException(status_code=404, detail="文件不存在")
+    if os.path.exists(new_path):
+        raise HTTPException(status_code=409, detail="目标文件名已存在")
+
+    try:
+        os.rename(old_path, new_path)
+        # 更新 manifest
+        from gpt_researcher.document_library import LibraryManager, UserTagsStore
+        library = LibraryManager(DOC_PATH)
+        entry = library._manifest.get(safe_old)
+        if entry:
+            library._manifest.remove(safe_old)
+            entry["filename"] = safe_new
+            library._manifest.upsert(entry)
+        # 迁移用户标签
+        UserTagsStore(DOC_PATH).rename_document(safe_old, safe_new)
+        return {"message": "重命名成功", "old_name": safe_old, "new_name": safe_new}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"重命名失败: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/library/preview/{filename}")
+async def preview_document(filename: str):
+    """文件预览流（路径白名单防穿越）。"""
+    safe_name = os.path.basename(filename)
+    file_path = os.path.join(DOC_PATH, safe_name)
+    # 安全检查：确保路径在 DOC_PATH 内
+    real_doc = os.path.realpath(DOC_PATH)
+    real_file = os.path.realpath(file_path)
+    if not real_file.startswith(real_doc):
+        raise HTTPException(status_code=403, detail="路径不合法")
+    if not os.path.isfile(real_file):
+        raise HTTPException(status_code=404, detail="文件不存在")
+
+    # 根据扩展名选择 MIME
+    ext = os.path.splitext(safe_name)[1].lower()
+    mime_map = {
+        ".pdf": "application/pdf",
+        ".md": "text/markdown; charset=utf-8",
+        ".txt": "text/plain; charset=utf-8",
+        ".html": "text/html; charset=utf-8",
+        ".csv": "text/csv; charset=utf-8",
+        ".json": "application/json; charset=utf-8",
+        ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        ".xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    }
+    media_type = mime_map.get(ext, "application/octet-stream")
+    return FileResponse(real_file, media_type=media_type, filename=safe_name)
+
+
+class ExportRequest(BaseModel):
+    filenames: List[str]
+    format: str = "json"  # json | csv
+
+
+@app.post("/api/library/export")
+async def export_documents(req: ExportRequest):
+    """导出选中文献的元信息为 JSON 或 CSV。"""
+    try:
+        from gpt_researcher.document_library import LibraryManager, UserTagsStore
+        library = LibraryManager(DOC_PATH)
+        all_docs = library.list_documents()
+        user_tags_store = UserTagsStore(DOC_PATH)
+        all_assignments = user_tags_store.get_all_assignments()
+
+        selected = [d for d in all_docs if d["filename"] in req.filenames]
+        for doc in selected:
+            doc["user_tags"] = [t["name"] for t in all_assignments.get(doc["filename"], [])]
+
+        if req.format == "csv":
+            import csv
+            import io
+            output = io.StringIO()
+            if selected:
+                fieldnames = ["filename", "primary_field", "subfields", "keywords", "summary", "uploaded_at", "chunks", "status", "user_tags"]
+                writer = csv.DictWriter(output, fieldnames=fieldnames, extrasaction="ignore")
+                writer.writeheader()
+                for doc in selected:
+                    row = dict(doc)
+                    row["subfields"] = "; ".join(row.get("subfields", []))
+                    row["keywords"] = "; ".join(row.get("keywords", []))
+                    row["user_tags"] = "; ".join(row.get("user_tags", []))
+                    writer.writerow(row)
+            csv_content = output.getvalue()
+            return Response(
+                content=csv_content,
+                media_type="text/csv; charset=utf-8",
+                headers={"Content-Disposition": "attachment; filename=library_export.csv"},
+            )
+        else:
+            return {"documents": selected}
+    except Exception as e:
+        logger.error(f"导出失败: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ── 用户标签 CRUD ──
+
+@app.get("/api/library/user-tags")
+async def list_user_tags():
+    """列出所有用户标签。"""
+    try:
+        from gpt_researcher.document_library import UserTagsStore
+        store = UserTagsStore(DOC_PATH)
+        return {"tags": store.list_tags()}
+    except Exception as e:
+        logger.error(f"获取用户标签失败: {e}")
+        return {"tags": []}
+
+
+@app.post("/api/library/user-tags")
+async def create_user_tag(request: Request):
+    """创建用户标签。"""
+    data = await request.json()
+    name = data.get("name", "").strip()
+    color = data.get("color")
+    if not name:
+        raise HTTPException(status_code=400, detail="标签名称不能为空")
+    try:
+        from gpt_researcher.document_library import UserTagsStore
+        store = UserTagsStore(DOC_PATH)
+        tag = store.create_tag(name, color)
+        return {"tag": tag}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"创建用户标签失败: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.patch("/api/library/user-tags/{tag_id}")
+async def update_user_tag(tag_id: str, request: Request):
+    """更新用户标签。"""
+    data = await request.json()
+    try:
+        from gpt_researcher.document_library import UserTagsStore
+        store = UserTagsStore(DOC_PATH)
+        tag = store.update_tag(tag_id, data.get("name"), data.get("color"))
+        return {"tag": tag}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@app.delete("/api/library/user-tags/{tag_id}")
+async def delete_user_tag(tag_id: str):
+    """删除用户标签。"""
+    from gpt_researcher.document_library import UserTagsStore
+    store = UserTagsStore(DOC_PATH)
+    ok = store.delete_tag(tag_id)
+    if not ok:
+        raise HTTPException(status_code=404, detail="标签不存在")
+    return {"message": "已删除"}
+
+
+@app.post("/api/library/user-tags/assign")
+async def assign_user_tag(request: Request):
+    """给文献贴/取消用户标签。"""
+    data = await request.json()
+    filename = data.get("filename", "")
+    tag_id = data.get("tag_id", "")
+    action = data.get("action", "assign")  # assign | unassign
+    if not filename or not tag_id:
+        raise HTTPException(status_code=400, detail="filename 和 tag_id 必填")
+    try:
+        from gpt_researcher.document_library import UserTagsStore
+        store = UserTagsStore(DOC_PATH)
+        if action == "unassign":
+            store.unassign(filename, tag_id)
+        else:
+            store.assign(filename, tag_id)
+        return {"message": "操作成功"}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@app.post("/api/library/taxonomy/fields")
+async def extend_taxonomy(request: Request):
+    """扩展系统词表（添加一级或二级领域）。"""
+    data = await request.json()
+    primary = data.get("primary_field", "").strip()
+    subfield = data.get("subfield", "").strip()
+    if not primary:
+        raise HTTPException(status_code=400, detail="primary_field 必填")
+    try:
+        from gpt_researcher.document_library.taxonomy import load_taxonomy
+        taxonomy = load_taxonomy(DOC_PATH)
+        changed = False
+        if primary not in taxonomy:
+            taxonomy[primary] = []
+            changed = True
+        if subfield and subfield not in taxonomy[primary]:
+            taxonomy[primary].append(subfield)
+            changed = True
+        if changed:
+            import json as _json
+            tax_path = os.path.join(DOC_PATH, ".index", "taxonomy.json")
+            os.makedirs(os.path.dirname(tax_path), exist_ok=True)
+            with open(tax_path, "w", encoding="utf-8") as f:
+                _json.dump(taxonomy, f, ensure_ascii=False, indent=2)
+        return {"message": "词表已更新", "taxonomy": taxonomy}
+    except Exception as e:
+        logger.error(f"更新词表失败: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.websocket("/ws")
