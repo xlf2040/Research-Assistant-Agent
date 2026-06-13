@@ -441,7 +441,18 @@ export default function Home() {
         previousChunk = chunk;
       }
     } else {
-      initializeWebSocket(newQuestion, chatBoxSettings);
+      // 检查 URL 是否带有 filenames 参数（从文献库页面跳转来的子集研究）
+      const extraParams: Record<string, any> = {};
+      if (typeof window !== 'undefined') {
+        const urlParams = new URLSearchParams(window.location.search);
+        const filenamesParam = urlParams.get('filenames');
+        if (filenamesParam) {
+          extraParams.filenames = filenamesParam.split(',').filter(Boolean);
+          // 清除 URL 参数
+          window.history.replaceState({}, '', '/');
+        }
+      }
+      initializeWebSocket(newQuestion, chatBoxSettings, Object.keys(extraParams).length > 0 ? extraParams : undefined);
     }
   };
 

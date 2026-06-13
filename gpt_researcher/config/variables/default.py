@@ -52,4 +52,9 @@ DEFAULT_CONFIG: BaseConfig = {
     "IMAGE_GENERATION_ENABLED": False,  # Master switch for inline image generation
     "IMAGE_GENERATION_STYLE": "dark",  # Image style: "dark" (matches app theme), "light", or "auto"
     "IMAGE_GENERATION_PROVIDER": "google",  # Image provider: "google" or "modelslab"
+
+    # Library (FAISS local index) settings
+    "LIBRARY_ENABLED": True,          # 是否启用文献库功能
+    "CLASSIFY_ON_UPLOAD": True,       # 上传时是否自动 LLM 打标
+    "SIMILARITY_TOP_K": 8,            # 文献库检索返回的 chunk 数量
 }

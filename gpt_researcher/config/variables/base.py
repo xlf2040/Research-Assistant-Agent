@@ -49,3 +49,7 @@ class BaseConfig(TypedDict):
     IMAGE_GENERATION_ENABLED: bool
     IMAGE_GENERATION_STYLE: str  # Image style: "dark", "light", or "auto"
     IMAGE_GENERATION_PROVIDER: str  # Image provider: "google" or "modelslab"
+    # Library (FAISS local index) settings
+    LIBRARY_ENABLED: bool
+    CLASSIFY_ON_UPLOAD: bool
+    SIMILARITY_TOP_K: int

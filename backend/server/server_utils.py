@@ -138,6 +138,7 @@ async def handle_start_command(websocket, data: str, manager):
         mcp_strategy,
         mcp_configs,
         max_search_results,
+        filenames,
     ) = extract_command_data(json_data)
 
     if not task or not report_type:
@@ -170,6 +171,7 @@ async def handle_start_command(websocket, data: str, manager):
         mcp_strategy,
         mcp_configs,
         max_search_results,
+        filenames=filenames,
     )
     report = str(report)
     file_paths = await generate_report_files(report, sanitized_filename)
@@ -298,10 +300,27 @@ async def handle_file_upload(file, DOC_PATH: str) -> Dict[str, str]:
         shutil.copyfileobj(file.file, buffer)
     print(f"File uploaded to {file_path}")
 
-    document_loader = DocumentLoader(DOC_PATH)
-    await document_loader.load()
-
-    return {"filename": file.filename, "path": file_path}
+    # 使用 LibraryManager 进行索引和打标
+    try:
+        from gpt_researcher.document_library import LibraryManager
+        library = LibraryManager(DOC_PATH)
+        entry = await library.add_document(file_path)
+        logger.info(f"文献已索引并打标: {file.filename}")
+        return {
+            "filename": file.filename,
+            "path": file_path,
+            "primary_field": entry.get("primary_field", ""),
+            "subfields": entry.get("subfields", []),
+            "keywords": entry.get("keywords", []),
+            "summary": entry.get("summary", ""),
+            "chunks": entry.get("chunks", 0),
+        }
+    except Exception as e:
+        logger.warning(f"LibraryManager 索引失败，降级到基本上传: {e}")
+        # 降级：仍然验证文件可解析
+        document_loader = DocumentLoader(DOC_PATH)
+        await document_loader.load()
+        return {"filename": file.filename, "path": file_path}
 
 
 async def handle_file_deletion(filename: str, DOC_PATH: str) -> JSONResponse:
@@ -309,6 +328,16 @@ async def handle_file_deletion(filename: str, DOC_PATH: str) -> JSONResponse:
     if os.path.exists(file_path):
         os.remove(file_path)
         print(f"File deleted: {file_path}")
+
+        # 同步从 LibraryManager 中移除
+        try:
+            from gpt_researcher.document_library import LibraryManager
+            library = LibraryManager(DOC_PATH)
+            await library.remove_document(os.path.basename(filename))
+            logger.info(f"文献已从索引中移除: {filename}")
+        except Exception as e:
+            logger.warning(f"从索引移除失败（不影响文件删除）: {e}")
+
         return JSONResponse(content={"message": "File deleted successfully"})
     else:
         print(f"File not found: {file_path}")
@@ -417,4 +446,5 @@ def extract_command_data(json_data: Dict) -> tuple:
         json_data.get("mcp_strategy", "fast"),
         json_data.get("mcp_configs", []),
         json_data.get("max_search_results"),
+        json_data.get("filenames"),
     )

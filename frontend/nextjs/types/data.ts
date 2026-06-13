@@ -68,4 +68,29 @@ export interface ResearchHistoryItem {
   timestamp: number;
   orderedData: Data[];
   chatMessages?: ChatMessage[];
-} 
+}
+
+export interface UserTagInfo {
+  id: string;
+  name: string;
+  color: string;
+}
+
+export interface LibraryDocument {
+  filename: string;
+  primary_field?: string;
+  subfields?: string[];
+  keywords?: string[];
+  summary?: string;
+  uploaded_at?: string;
+  chunks?: number;
+  sha256?: string;
+  status?: string;
+  user_tags?: UserTagInfo[];
+}
+
+export interface LibraryTagStats {
+  primary_fields: Record<string, number>;
+  subfields: Record<string, number>;
+  keywords: Record<string, number>;
+}
