@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useRef } from "react";
 import { JournalCandidate, Finding, Annotation, PaperSubmissionMessage } from "@/types/data";
 import JournalRecommendationGrid from "./JournalRecommendationGrid";
 import CritiqueReportView from "./CritiqueReportView";
@@ -93,12 +93,22 @@ export default function PaperSubmissionReportView({
     }
   }, []);
 
-  // Process new messages
+  // Process new messages — 关键：用游标追踪已处理消息数，支持「批量回放」（如从历史会话恢复时一次性灌入全部消息）
+  const processedCountRef = useRef(0);
   React.useEffect(() => {
-    if (orderedMessages.length > 0) {
-      const lastMsg = orderedMessages[orderedMessages.length - 1];
-      processMessage(lastMsg);
+    if (orderedMessages.length === 0) {
+      processedCountRef.current = 0;
+      return;
     }
+    // 检测重置：消息总数比已处理的还少，说明换了一个新会话
+    if (orderedMessages.length < processedCountRef.current) {
+      processedCountRef.current = 0;
+    }
+    // 处理所有尚未处理过的消息
+    for (let i = processedCountRef.current; i < orderedMessages.length; i++) {
+      processMessage(orderedMessages[i]);
+    }
+    processedCountRef.current = orderedMessages.length;
   }, [orderedMessages, processMessage]);
 
   const handleSelectJournal = (journalId: string) => {

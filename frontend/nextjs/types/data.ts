@@ -122,6 +122,8 @@ export interface ResearchHistoryItem {
   timestamp: number;
   orderedData: Data[];
   chatMessages?: ChatMessage[];
+  /** 用于区分历史会话类型，例如 "research_report" / "paper_submission" 等；缺省视为普通研究报告 */
+  report_type?: string;
 }
 
 export interface UserTagInfo {

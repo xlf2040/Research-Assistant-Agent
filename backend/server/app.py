@@ -238,6 +238,7 @@ async def create_or_update_report(request: Request):
             "orderedData": data.get("orderedData") or [],
             "chatMessages": data.get("chatMessages") or [],
             "timestamp": timestamp,
+            "report_type": data.get("report_type") or (existing.get("report_type") if existing else None),
         }
 
         await report_store.upsert_report(research_id, report)

@@ -765,55 +765,92 @@ export default function Home() {
     const saveOrUpdateResearch = async () => {
       // Prevent infinite loops by checking if we're already updating
       if (isUpdatingRef.current) return;
-      
-      if (showResult && !loading && answer && question && orderedData.length > 0) {
-        if (isInChatMode && currentResearchId) {
-          // Prevent redundant updates by checking if data has changed
+
+      const isPaperSubmission = chatBoxSettings.report_type === 'paper_submission';
+
+      // 普通研究：要求 answer/question/orderedData 都有内容；
+      // paper_submission：因为 answer 始终为空，仅要求 orderedData 中已经出现 annotations_ready / critique_section（即任务真正产出内容）
+      const paperSubmissionHasOutput = isPaperSubmission && orderedData.some((d: any) => {
+        const c = d?.content || d?.type;
+        return c === 'annotations_ready' || c === 'critique_section' || c === 'journals_complete';
+      });
+
+      const shouldPersist = showResult && !loading && orderedData.length > 0 && (
+        isPaperSubmission ? paperSubmissionHasOutput : (!!answer && !!question)
+      );
+
+      if (!shouldPersist) return;
+
+      // paper_submission：question 兜底使用论文标题或文件名，避免侧栏出现空标题
+      let effectiveQuestion = question;
+      if (isPaperSubmission) {
+        const parsed: any = orderedData.find((d: any) => (d?.content || d?.type) === 'paper_parsed');
+        const paperTitle = parsed?.title || parsed?.payload?.title;
+        const paperFilename = chatBoxSettings.paper_filename;
+        effectiveQuestion = question || paperTitle || (paperFilename ? `论文投稿建议 · ${paperFilename}` : '论文投稿建议');
+      }
+
+      if (isInChatMode && currentResearchId) {
+        // Prevent redundant updates by checking if data has changed
+        try {
+          const currentResearch = await getResearchById(currentResearchId);
+          if (currentResearch && (currentResearch.answer !== answer || JSON.stringify(currentResearch.orderedData) !== JSON.stringify(orderedData))) {
+            isUpdatingRef.current = true;
+            await updateResearch(currentResearchId, answer, orderedData, chatBoxSettings.report_type);
+            // Reset the flag after a short delay to allow state updates to complete
+            setTimeout(() => {
+              isUpdatingRef.current = false;
+            }, 100);
+          }
+        } catch (error) {
+          console.error('Error updating research:', error);
+          isUpdatingRef.current = false;
+        }
+      } else if (!isInChatMode) {
+        // Check if this is a new research (not loaded from history)
+        const isNewResearch = !history.some(item =>
+          isPaperSubmission
+            ? (item.report_type === 'paper_submission' && item.question === effectiveQuestion && JSON.stringify(item.orderedData) === JSON.stringify(orderedData))
+            : (item.question === question && item.answer === answer)
+        );
+
+        if (isNewResearch) {
+          isUpdatingRef.current = true;
+          try {
+            const newId = await saveResearch(effectiveQuestion, answer, orderedData, chatBoxSettings.report_type);
+            setCurrentResearchId(newId);
+
+            // Don't navigate to the research page URL anymore
+            // Just save the ID for sharing purposes
+
+          } catch (error) {
+            console.error('Error saving research:', error);
+          } finally {
+            // Reset the flag after a short delay to allow state updates to complete
+            setTimeout(() => {
+              isUpdatingRef.current = false;
+            }, 100);
+          }
+        } else if (isPaperSubmission && currentResearchId) {
+          // 同会话内有新的 critique_section 流入，做一次增量 update
           try {
             const currentResearch = await getResearchById(currentResearchId);
-            if (currentResearch && (currentResearch.answer !== answer || JSON.stringify(currentResearch.orderedData) !== JSON.stringify(orderedData))) {
+            if (currentResearch && JSON.stringify(currentResearch.orderedData) !== JSON.stringify(orderedData)) {
               isUpdatingRef.current = true;
-              await updateResearch(currentResearchId, answer, orderedData);
-              // Reset the flag after a short delay to allow state updates to complete
-              setTimeout(() => {
-                isUpdatingRef.current = false;
-              }, 100);
+              await updateResearch(currentResearchId, answer, orderedData, chatBoxSettings.report_type);
+              setTimeout(() => { isUpdatingRef.current = false; }, 100);
             }
           } catch (error) {
-            console.error('Error updating research:', error);
+            console.error('Error updating paper_submission research:', error);
             isUpdatingRef.current = false;
-          }
-        } else if (!isInChatMode) {
-          // Check if this is a new research (not loaded from history)
-          const isNewResearch = !history.some(item => 
-            item.question === question && item.answer === answer
-          );
-          
-          if (isNewResearch) {
-            isUpdatingRef.current = true;
-            try {
-              const newId = await saveResearch(question, answer, orderedData);
-              setCurrentResearchId(newId);
-              
-              // Don't navigate to the research page URL anymore
-              // Just save the ID for sharing purposes
-              
-            } catch (error) {
-              console.error('Error saving research:', error);
-            } finally {
-              // Reset the flag after a short delay to allow state updates to complete
-              setTimeout(() => {
-                isUpdatingRef.current = false;
-              }, 100);
-            }
           }
         }
       }
     };
-    
+
     // Call the async function
     saveOrUpdateResearch();
-  }, [showResult, loading, answer, question, orderedData, history, saveResearch, updateResearch, isInChatMode, currentResearchId, getResearchById]);
+  }, [showResult, loading, answer, question, orderedData, history, saveResearch, updateResearch, isInChatMode, currentResearchId, getResearchById, chatBoxSettings.report_type, chatBoxSettings.paper_filename]);
 
   // Handle selecting a research from history
   const handleSelectResearch = async (id: string) => {

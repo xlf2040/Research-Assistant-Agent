@@ -98,8 +98,11 @@ export const useResearchHistory = () => {
       // Upload local-only reports to server
       for (const report of localOnlyReports) {
         try {
-          // Skip reports without questions or answers
-          if (!report.question || !report.answer) continue;
+          // 跳过明显无意义的占位历史；paper_submission 类型允许 answer 为空（其数据落在 orderedData）
+          const isPaperSubmission = report.report_type === 'paper_submission';
+          if (!report.question) continue;
+          if (!isPaperSubmission && !report.answer) continue;
+          if (isPaperSubmission && (!report.orderedData || report.orderedData.length === 0)) continue;
           
           console.log(`Uploading local report to server: ${report.id}`);
           
@@ -113,7 +116,8 @@ export const useResearchHistory = () => {
               question: report.question,
               answer: report.answer,
               orderedData: report.orderedData || [],
-              chatMessages: report.chatMessages || []
+              chatMessages: report.chatMessages || [],
+              report_type: report.report_type,
             }),
           });
           
@@ -154,7 +158,7 @@ export const useResearchHistory = () => {
   }, []); // Empty dependency array - only run once on mount
   
   // Save new research
-  const saveResearch = async (question: string, answer: string, orderedData: Data[]) => {
+  const saveResearch = async (question: string, answer: string, orderedData: Data[], reportType?: string) => {
     try {
       // Generate a unique ID
       const id = uuidv4();
@@ -170,7 +174,8 @@ export const useResearchHistory = () => {
           question,
           answer,
           orderedData,
-          chatMessages: []
+          chatMessages: [],
+          report_type: reportType
         }),
       });
       
@@ -179,13 +184,14 @@ export const useResearchHistory = () => {
         const newId = data.id;
         
         // Update local state
-        const newResearch = {
+        const newResearch: ResearchHistoryItem = {
           id: newId,
           question,
           answer,
           orderedData,
           chatMessages: [],
           timestamp: Date.now(),
+          report_type: reportType,
         };
         
         setHistory(prev => [newResearch, ...prev]);
@@ -207,13 +213,14 @@ export const useResearchHistory = () => {
       toast.error('Failed to save research to server. Saved locally only.');
       
       // Fallback: save to localStorage only
-      const newResearch = {
+      const newResearch: ResearchHistoryItem = {
         id: uuidv4(),
         question,
         answer,
         orderedData,
         chatMessages: [],
         timestamp: Date.now(),
+        report_type: reportType,
       };
       
       // Update local state
@@ -232,7 +239,7 @@ export const useResearchHistory = () => {
   };
   
   // Update existing research
-  const updateResearch = async (id: string, answer: string, orderedData: Data[]) => {
+  const updateResearch = async (id: string, answer: string, orderedData: Data[], reportType?: string) => {
     try {
       // Update in backend
       const response = await fetch(`/api/reports/${id}`, {
@@ -242,7 +249,8 @@ export const useResearchHistory = () => {
         },
         body: JSON.stringify({
           answer,
-          orderedData
+          orderedData,
+          ...(reportType ? { report_type: reportType } : {})
         }),
       });
       
@@ -253,7 +261,7 @@ export const useResearchHistory = () => {
       // Update local state
       setHistory(prev => 
         prev.map(item => 
-          item.id === id ? { ...item, answer, orderedData, timestamp: Date.now() } : item
+          item.id === id ? { ...item, answer, orderedData, timestamp: Date.now(), ...(reportType ? { report_type: reportType } : {}) } : item
         )
       );
       
@@ -262,7 +270,7 @@ export const useResearchHistory = () => {
       if (localHistory) {
         const parsedHistory = JSON.parse(localHistory);
         const updatedHistory = parsedHistory.map((item: any) => 
-          item.id === id ? { ...item, answer, orderedData, timestamp: Date.now() } : item
+          item.id === id ? { ...item, answer, orderedData, timestamp: Date.now(), ...(reportType ? { report_type: reportType } : {}) } : item
         );
         localStorage.setItem('researchHistory', JSON.stringify(updatedHistory));
       }
@@ -274,7 +282,7 @@ export const useResearchHistory = () => {
       // Update local state anyway
       setHistory(prev => 
         prev.map(item => 
-          item.id === id ? { ...item, answer, orderedData, timestamp: Date.now() } : item
+          item.id === id ? { ...item, answer, orderedData, timestamp: Date.now(), ...(reportType ? { report_type: reportType } : {}) } : item
         )
       );
       
@@ -283,7 +291,7 @@ export const useResearchHistory = () => {
       if (localHistory) {
         const parsedHistory = JSON.parse(localHistory);
         const updatedHistory = parsedHistory.map((item: any) => 
-          item.id === id ? { ...item, answer, orderedData, timestamp: Date.now() } : item
+          item.id === id ? { ...item, answer, orderedData, timestamp: Date.now(), ...(reportType ? { report_type: reportType } : {}) } : item
         );
         localStorage.setItem('researchHistory', JSON.stringify(updatedHistory));
       }

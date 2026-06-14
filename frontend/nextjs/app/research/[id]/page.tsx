@@ -1,10 +1,10 @@
 "use client";
 
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useResearchHistoryContext } from "@/hooks/ResearchHistoryContext";
 import { preprocessOrderedData } from "@/utils/dataProcessing";
-import { ChatBoxSettings, Data, ChatData, ChatMessage, QuestionData } from "@/types/data";
+import { ChatBoxSettings, Data, ChatData, ChatMessage, QuestionData, PaperSubmissionMessage } from "@/types/data";
 import { toast } from "react-hot-toast";
 import { getAppropriateLayout } from "@/utils/getLayout";
 
@@ -15,6 +15,7 @@ import CopilotResearchContent from "@/components/research/CopilotResearchContent
 import NotFoundContent from "@/components/research/NotFoundContent";
 import LoadingDots from "@/components/LoadingDots";
 import ResearchSidebar from "@/components/ResearchSidebar";
+import PaperSubmissionReportView from "@/components/PaperSubmission/PaperSubmissionReportView";
 
 // Import mobile components
 import MobileResearchContent from "@/components/mobile/MobileResearchContent";
@@ -154,6 +155,10 @@ export default function ResearchPage({ params }: { params: { id: string } }) {
             setAnswer(data.report.answer || '');
             setOrderedData(Array.isArray(data.report.orderedData) ? data.report.orderedData : []);
             setCurrentResearchId(id);
+            // 同步 report_type 到 chatBoxSettings，让 paper_submission 等特殊视图能被正确渲染
+            if (data.report.report_type) {
+              setChatBoxSettings(prev => ({ ...prev, report_type: data.report.report_type }));
+            }
             setLoading(false);
           }
         } else if (response.status === 500) {
@@ -175,6 +180,9 @@ export default function ResearchPage({ params }: { params: { id: string } }) {
             setAnswer(localItem.answer || '');
             setOrderedData(Array.isArray(localItem.orderedData) ? localItem.orderedData : []);
             setCurrentResearchId(id);
+            if (localItem.report_type) {
+              setChatBoxSettings(prev => ({ ...prev, report_type: localItem.report_type }));
+            }
             setLoading(false);
             return;
           }
@@ -203,6 +211,9 @@ export default function ResearchPage({ params }: { params: { id: string } }) {
           setAnswer(localItem.answer || '');
           setOrderedData(Array.isArray(localItem.orderedData) ? localItem.orderedData : []);
           setCurrentResearchId(id);
+          if (localItem.report_type) {
+            setChatBoxSettings(prev => ({ ...prev, report_type: localItem.report_type }));
+          }
           setLoading(false);
           return;
         }
@@ -219,6 +230,7 @@ export default function ResearchPage({ params }: { params: { id: string } }) {
             answer: localItem.answer || '',
             orderedData: Array.isArray(localItem.orderedData) ? JSON.parse(JSON.stringify(localItem.orderedData)) : [],
             chatMessages: Array.isArray(localItem.chatMessages) ? JSON.parse(JSON.stringify(localItem.chatMessages)) : [],
+            report_type: localItem.report_type,
           };
           
           const saveResponse = await fetch('/api/reports', {
@@ -240,6 +252,9 @@ export default function ResearchPage({ params }: { params: { id: string } }) {
           setAnswer(localItem.answer || '');
           setOrderedData(Array.isArray(localItem.orderedData) ? localItem.orderedData : []);
           setCurrentResearchId(id);
+          if (localItem.report_type) {
+            setChatBoxSettings(prev => ({ ...prev, report_type: localItem.report_type }));
+          }
           setLoading(false);
         } catch (error) {
           console.error('Error saving to backend:', error);
@@ -249,6 +264,9 @@ export default function ResearchPage({ params }: { params: { id: string } }) {
           setAnswer(localItem.answer || '');
           setOrderedData(Array.isArray(localItem.orderedData) ? localItem.orderedData : []);
           setCurrentResearchId(id);
+          if (localItem.report_type) {
+            setChatBoxSettings(prev => ({ ...prev, report_type: localItem.report_type }));
+          }
           setLoading(false);
         }
       }
@@ -294,6 +312,36 @@ export default function ResearchPage({ params }: { params: { id: string } }) {
     
     setAllLogs(newLogs);
   }, [orderedData]);
+
+  // paper_submission：把 orderedData 中相关日志条目派生成 PaperSubmissionMessage[]
+  const paperSubmissionMessages = useMemo<PaperSubmissionMessage[]>(() => {
+    if (chatBoxSettings.report_type !== 'paper_submission') return [];
+    const psTypes = new Set([
+      'paper_parsed', 'journal_card', 'journals_complete',
+      'critique_section', 'annotations_ready', 'progress', 'error'
+    ]);
+    return orderedData
+      .filter((d: any) => {
+        const t = d?.type || '';
+        const c = d?.content || '';
+        return (t === 'logs' && psTypes.has(c)) || psTypes.has(t);
+      })
+      .map((d: any) => ({
+        type: (d.content || d.type) as PaperSubmissionMessage['type'],
+        payload: d.payload || d.output,
+        title: d.title,
+        keywords: d.keywords,
+        primary_field: d.primary_field,
+        sections_count: d.sections_count,
+        dimension: d.dimension,
+        dimension_name: d.dimension_name,
+        findings: d.findings,
+        count: d.count,
+        annotations: d.annotations,
+        files: d.files,
+        content: typeof d.output === 'string' ? d.output : d.content,
+      } as PaperSubmissionMessage));
+  }, [orderedData, chatBoxSettings.report_type]);
 
   // Scroll to bottom when chat updates
   const scrollToBottom = () => {
@@ -545,8 +593,17 @@ export default function ResearchPage({ params }: { params: { id: string } }) {
           isOpen={sidebarOpen}
           toggleSidebar={toggleSidebar}
         />
-        
-        {chatBoxSettings.layoutType === 'copilot' ? (
+
+        {chatBoxSettings.report_type === 'paper_submission' ? (
+          <PaperSubmissionReportView
+            orderedMessages={paperSubmissionMessages}
+            onSelectJournal={() => {
+              // 历史会话只读，期刊选择不再可用；提示用户去新建任务
+              toast("这是一份历史会话快照，无法重新选择期刊", { icon: 'ℹ️' });
+            }}
+            onNewResearch={handleNewResearch}
+          />
+        ) : chatBoxSettings.layoutType === 'copilot' ? (
           <CopilotResearchContent
             orderedData={orderedData}
             answer={answer}

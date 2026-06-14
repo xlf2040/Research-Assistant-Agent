@@ -216,7 +216,14 @@ const ResearchSidebar: React.FC<ResearchSidebarProps> = ({
                               toggleSidebar();
                             }}
                           >
-                            <h3 className="font-medium truncate text-gray-200 text-sm sm:text-base transition-colors duration-200 group-hover:text-teal-400">{item.question}</h3>
+                            <h3 className="font-medium truncate text-gray-200 text-sm sm:text-base transition-colors duration-200 group-hover:text-teal-400 flex items-center gap-1.5">
+                              {item.report_type === 'paper_submission' && (
+                                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-sky-500/20 text-sky-300 border border-sky-500/30 flex-shrink-0">
+                                  投稿
+                                </span>
+                              )}
+                              <span className="truncate">{item.question}</span>
+                            </h3>
                             <p className="text-xs text-gray-400 mt-1.5 flex items-center">
                               <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5 mr-1 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
