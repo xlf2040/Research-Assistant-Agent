@@ -1,10 +1,8 @@
 cff-version: 1.0.0
-message: "If you use this software, please cite it as below."
+message: "如果你使用了本软件，请按以下方式引用。"
 authors:
-  - family-names: Elovic
-    given-names: Assaf
-title: gpt-researcher
-version: 0.5.4
-date-released: 2023-07-23
-repository-code: https://github.com/assafelovic/gpt-researcher
-url: https://gptr.dev
+  - family-names: 立
+    given-names: 峰项
+title: 科研agent助手
+version: 0.14.7
+date-released: 2024-01-01

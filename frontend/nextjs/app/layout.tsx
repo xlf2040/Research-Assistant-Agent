@@ -11,7 +11,7 @@ const inter = Lexend({ subsets: ["latin"] });
 let title = "科研agent助手";
 let description =
   "基于 LLM 的自主科研 agent，可对任意主题进行本地和网络研究，并生成附带引用的综合报告。";
-let url = "https://github.com/assafelovic/gpt-researcher";
+let url = "http://localhost:3000";
 let ogimage = "/favicon.ico";
 let sitename = "科研agent助手";
 

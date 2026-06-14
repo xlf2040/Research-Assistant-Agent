@@ -1,4 +1,4 @@
-"""GPT Researcher agent module.
+"""科研agent助手 agent module.
 
 This module provides the main GPTResearcher class that orchestrates
 autonomous research and report generation using LLMs and web search.
@@ -34,7 +34,7 @@ from .vector_store import VectorStoreWrapper
 
 
 class GPTResearcher:
-    """Main GPT Researcher agent class.
+    """Main 科研agent助手 agent class.
 
     This class orchestrates the entire research process including
     web searching, content scraping, context management, and
@@ -82,7 +82,7 @@ class GPTResearcher:
         **kwargs
     ):
         """
-        Initialize a GPT Researcher instance.
+        Initialize a 科研agent助手 instance.
         
         Args:
             query (str): The research query or question.

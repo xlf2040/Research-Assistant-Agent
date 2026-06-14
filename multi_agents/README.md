@@ -1,4 +1,4 @@
-# LangGraph x GPT Researcher
+# LangGraph x 科研agent助手
 [LangGraph](https://python.langchain.com/docs/langgraph) is a library for building stateful, multi-actor applications with LLMs. 
 This example uses Langgraph to automate the process of an in depth research on any given topic.
 
@@ -10,7 +10,7 @@ Inspired by the recent [STORM](https://arxiv.org/abs/2402.14207) paper, this exa
 
 An average run generates a 5-6 page research report in multiple formats such as PDF, Docx and Markdown.
 
-Please note: Multi-agents are utilizing the same configuration of models like GPT-Researcher does. However, only the SMART_LLM is used for the time being. Please refer to the [LLM config pages](https://docs.gptr.dev/docs/gpt-researcher/llms).
+Please note: Multi-agents are utilizing the same configuration of models like 科研agent助手 does. However, only the SMART_LLM is used for the time being.
 
 ## The Multi Agent Team
 The research team is made up of 8 agents:

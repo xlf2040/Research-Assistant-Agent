@@ -1,8 +1,8 @@
-# Contributing to GPT Researcher
+# 贡献指南 - 科研agent助手
 
-First off, we'd like to welcome you and thank you for your interest and effort in contributing to our open-source project ❤️. Contributions of all forms are welcome—from new features and bug fixes to documentation and more.
+欢迎你对本项目做出贡献！无论是新功能、Bug 修复还是文档改进，所有形式的贡献都受到欢迎。
 
-We are on a mission to build the #1 AI agent for comprehensive, unbiased, and factual research online, and we need your support to achieve this grand vision.
+我们的使命是打造最优秀的 AI 研究智能体，为全面、无偏见、事实性的在线研究提供支持。
 
 Please take a moment to review this document to make the contribution process easy and effective for everyone involved.
 

@@ -1,6 +1,6 @@
 # Deep Research ✨ NEW ✨
 
-With the latest "Deep Research" trend in the AI community, we're excited to implement our own Open source deep research capability! Introducing GPT Researcher's Deep Research - an advanced recursive research system that explores topics with unprecedented depth and breadth.
+With the latest "Deep Research" trend in the AI community, we're excited to implement our own Open source deep research capability! Introducing 科研agent助手's Deep Research - an advanced recursive research system that explores topics with unprecedented depth and breadth.
 
 ## How It Works
 
@@ -17,7 +17,6 @@ Think of it as deploying a team of AI researchers, each following their own rese
 ## Process Flow
 ![deep research](https://github.com/user-attachments/assets/eba2d94b-bef3-4f8d-bbc0-f15bd0a40968)
 
-
 ## Quick Start
 
 ```python
@@ -29,7 +28,7 @@ async def main():
     # Initialize researcher with deep research type
     researcher = GPTResearcher(
         query="What are the latest developments in quantum computing?",
-        report_type="deep",  # This triggers deep research modd
+        report_type="deep",  # This triggers deep research mode
     )
     
     # Run research

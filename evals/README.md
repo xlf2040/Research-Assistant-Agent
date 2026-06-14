@@ -1,10 +1,10 @@
-# GPT-Researcher Evaluations
+# 科研agent助手 Evaluations
 
-This directory contains evaluation tools and frameworks for assessing the performance of GPT-Researcher across different research tasks.
+This directory contains evaluation tools and frameworks for assessing the performance of 科研agent助手 across different research tasks.
 
 ## Simple Evaluations (`simple_evals/`)
 
-The `simple_evals` directory contains a straightforward evaluation framework adapted from [OpenAI's simple-evals system](https://github.com/openai/simple-evals), specifically designed to measure short-form factuality in large language models. Our implementation is based on OpenAI's [SimpleQA evaluation methodology](https://github.com/openai/simple-evals/blob/main/simpleqa_eval.py), following their zero-shot, chain-of-thought approach while adapting it for GPT-Researcher's specific use case.
+The `simple_evals` directory contains a straightforward evaluation framework adapted from [OpenAI's simple-evals system](https://github.com/openai/simple-evals), specifically designed to measure short-form factuality in large language models. Our implementation is based on OpenAI's [SimpleQA evaluation methodology](https://github.com/openai/simple-evals/blob/main/simpleqa_eval.py), following their zero-shot, chain-of-thought approach while adapting it for 科研agent助手's specific use case.
 
 ### Components
 

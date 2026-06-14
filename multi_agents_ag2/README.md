@@ -1,6 +1,6 @@
-# AG2 x GPT Researcher
+# AG2 x 科研agent助手
 [AG2](https://github.com/ag2ai/ag2) is a framework for building multi-agent applications with LLMs.
-This example uses AG2 to orchestrate the GPT Researcher multi-agent workflow.
+This example uses AG2 to orchestrate the 科研agent助手 multi-agent workflow.
 
 ## Use case
 This example mirrors the LangGraph flow with the same set of agents and stages, but uses AG2 as the orchestration layer.
@@ -9,7 +9,7 @@ This example mirrors the LangGraph flow with the same set of agents and stages, 
 The research team is made up of 8 agents:
 - **Human** - The human in the loop that oversees the process and provides feedback to the agents.
 - **Chief Editor** - Oversees the research process and manages the team.
-- **Researcher** (gpt-researcher) - A specialized autonomous agent that conducts in depth research on a given topic.
+- **Researcher** (research-agent) - A specialized autonomous agent that conducts in depth research on a given topic.
 - **Editor** - Responsible for planning the research outline and structure.
 - **Reviewer** - Validates the correctness of the research results given a set of criteria.
 - **Revisor** - Revises the research results based on the feedback from the reviewer.

@@ -111,7 +111,7 @@ async def lifespan(app: FastAPI):
     else:
         logger.warning(f"Frontend directory not found: {frontend_path}")
     
-    logger.info("GPT Researcher API ready - local mode (no database persistence)")
+    logger.info("科研agent助手 API 就绪 - 本地模式（无数据库持久化）")
     yield
     # Shutdown
     logger.info("Research API shutting down")
@@ -127,7 +127,6 @@ ALLOWED_ORIGINS = (
     else [
         "http://localhost:3000",
         "http://127.0.0.1:3000",
-        "https://app.gptr.dev",
     ]
 )
 
@@ -184,7 +183,7 @@ async def serve_frontend():
 
 @app.get("/.well-known/agent-discovery.json")
 async def agent_discovery(request: Request):
-    """Advertise GPT Researcher services via the Agent Discovery Protocol."""
+    """Advertise 科研agent助手 services via the Agent Discovery Protocol."""
     origin = str(request.base_url).rstrip("/")
     domain = request.url.hostname or request.headers.get("host", "")
     contact = os.getenv("AGENT_DISCOVERY_CONTACT")

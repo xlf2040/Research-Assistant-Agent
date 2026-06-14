@@ -21,7 +21,7 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*  # Clean up apt lists to reduce image size
 
 # Stage 2: Python dependencies installation
-FROM install-browser AS gpt-researcher-install
+FROM install-browser AS research-agent-install
 
 ENV PIP_ROOT_USER_ACTION=ignore
 WORKDIR /usr/src/app
@@ -50,15 +50,15 @@ ENV WORKERS=${WORKERS}
 
 # Create a non-root user for security
 # NOTE: Don't use this if you are relying on `_check_pkg` to pip install packages dynamically.
-RUN useradd -ms /bin/bash gpt-researcher && \
-    chown -R gpt-researcher:gpt-researcher /usr/src/app && \
+RUN useradd -ms /bin/bash research-agent && \
+    chown -R research-agent:research-agent /usr/src/app && \
     # Add these lines to create and set permissions for outputs directory
     mkdir -p /usr/src/app/outputs && \
-    chown -R gpt-researcher:gpt-researcher /usr/src/app/outputs && \
+    chown -R research-agent:research-agent /usr/src/app/outputs && \
     chmod 777 /usr/src/app/outputs
-USER gpt-researcher
+USER research-agent
 WORKDIR /usr/src/app
 
 # Copy the rest of the application files with proper ownership
-COPY --chown=gpt-researcher:gpt-researcher ./ ./
+COPY --chown=research-agent:research-agent ./ ./
 CMD uvicorn main:app --host ${HOST} --port ${PORT} --workers ${WORKERS}

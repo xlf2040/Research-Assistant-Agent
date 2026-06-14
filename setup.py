@@ -22,14 +22,14 @@ with open("requirements.txt", "r") as f:
 setup(
     name="gpt-researcher",
     version=LATEST_VERSION,
-    description="GPT Researcher is an autonomous agent designed for comprehensive web research on any task",
+    description="科研agent助手是一个自主智能体，专为多种任务的全面网络研究而设计。",
     package_dir={'gpt_researcher': 'gpt_researcher'},
     packages=find_packages(exclude=exclude_packages),
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/assafelovic/gpt-researcher",
-    author="Assaf Elovic",
-    author_email="assaf.elovic@gmail.com",
+    url="https://github.com/lifengxiang/gpt-researcher",
+    author="立峰项",
+    author_email="2329427907@qq.com",
     license="MIT",
     classifiers=[
         "License :: OSI Approved :: MIT License",

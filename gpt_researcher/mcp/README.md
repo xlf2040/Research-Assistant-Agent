@@ -1,10 +1,10 @@
-# GPT Researcher MCP Integration
+# 科研agent助手 MCP Integration
 
-This directory contains the comprehensive Model Context Protocol (MCP) integration for GPT Researcher. MCP enables GPT Researcher to seamlessly connect with and utilize external tools and data sources through a standardized protocol.
+This directory contains the comprehensive Model Context Protocol (MCP) integration for 科研agent助手. MCP enables 科研agent助手 to seamlessly connect with and utilize external tools and data sources through a standardized protocol.
 
 ## 🔧 What is MCP?
 
-Model Context Protocol (MCP) is an open standard that enables secure connections between AI applications and external data sources and tools. With MCP, GPT Researcher can:
+Model Context Protocol (MCP) is an open standard that enables secure connections between AI applications and external data sources and tools. With MCP, 科研agent助手 can:
 
 - **Access Local Data**: Connect to databases, file systems, and local APIs
 - **Use External Tools**: Integrate with web services, APIs, and third-party tools

@@ -1,8 +1,8 @@
 [tool.poetry]
 name = "gpt-researcher"
 version = "0.14.7"
-description = "GPT Researcher is an autonomous agent designed for comprehensive online research on a variety of tasks."
-authors = ["Assaf Elovic <assaf.elovic@gmail.com>"]
+description = "科研agent助手是一个自主智能体，专为多种任务的全面在线研究而设计。"
+authors = ["立峰项 <2329427907@qq.com>"]
 license = "MIT"
 readme = "README.md"
 
@@ -65,8 +65,8 @@ gpt-researcher = { workspace = true }
 [project]
 name = "gpt-researcher"
 version = "0.14.7"
-description = "GPT Researcher is an autonomous agent designed for comprehensive online research on a variety of tasks."
-authors = [{ name = "Assaf Elovic", email = "assaf.elovic@gmail.com" }]
+description = "科研agent助手是一个自主智能体，专为多种任务的全面在线研究而设计。"
+authors = [{ name = "立峰项", email = "2329427907@qq.com" }]
 license = { text = "MIT" }
 readme = "README.md"
 requires-python = ">=3.11"

@@ -1,6 +1,6 @@
 {
-  "name": "gpt-researcher-ui",
-  "description": "GPT Researcher frontend as a React component",
+  "name": "research-agent-ui",
+  "description": "科研agent助手前端组件",
   "version": "0.1.74",
   "main": "dist/index.js",
   "module": "dist/index.esm.js",
@@ -85,19 +85,19 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/assafelovic/gpt-researcher.git"
+    "url": ""
   },
   "keywords": [
-    "gpt",
-    "researcher",
     "ai",
+    "research",
+    "agent",
     "react",
     "nextjs"
   ],
-  "author": "GPT Researcher Team",
+  "author": "立峰项",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/assafelovic/gpt-researcher/issues"
+    "url": ""
   },
-  "homepage": "https://github.com/assafelovic/gpt-researcher#readme"
+  "homepage": ""
 }
