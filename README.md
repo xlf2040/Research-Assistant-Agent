@@ -44,6 +44,9 @@ Steps:
 - 🔍 JavaScript-enabled web scraping.
 - 📂 Maintain memory and context throughout the research process.
 - 📄 Export reports in multiple formats like PDF, Word, etc.
+- 📚 **Literature Library** — Build and manage your own local reference library with FAISS vector indexing, automatic classification, controlled vocabulary, and user-defined tags.
+- 📰 **Paper Submission Advisor** — Two-stage journal recommendation: discover candidate journals via OpenAlex + Crossref APIs, then generate a 16-dimension revision report for your manuscript.
+- 🤖 **15+ Retrievers** — Support for Google, Bing, DuckDuckGo, arXiv, Semantic Scholar, PubMed Central, OpenAlex, and more.
 
 ## ⚙️ Quick Start
 
@@ -162,6 +165,46 @@ Research Agent Assistant now includes Deep Research - an advanced recursive rese
 - 🤝 Intelligent context management across research branches
 - ⏱️ Each deep research takes approximately 5 minutes
 
+## 📰 Paper Submission Advisor
+
+A specialized two-stage workflow designed to help researchers prepare manuscripts for journal submission:
+
+### Stage 1 — Journal Discovery
+- **Multi-source journal search** using OpenAlex and Crossref APIs to find candidate journals matching your research topic.
+- **LLM-powered ranking** that scores and ranks journals based on relevance, impact, scope match, and acceptance characteristics.
+- **Graceful fallback** to LLM-only recommendation when external APIs are unavailable.
+
+### Stage 2 — Revision Guidance
+- **16-dimension manuscript critique** covering: Formatting, Title & Abstract, Keywords, Introduction Quality, Method Reproducibility, Results & Discussion, Figure/Table Standards, Literature References, Grammar & Spelling, Technical Terminology, Writing Consistency, Logical Coherence, Required Declarations, Author Attribution (with blinded review safety check), Anonymization Check, and Cover Letter Suggestions.
+- **Journal-specific author guidelines** automatically fetched from the target journal's website (with 24-hour disk caching).
+- **Annotated revision report** generated in Markdown with precise line-level locations of issues in your manuscript.
+- **Export options**: Markdown, PDF, and structured JSON annotations.
+
+```bash
+# Use via the frontend: select "Paper Submission" as the report type
+# Or programmatically:
+export REPORT_TYPE=paper_submission
+```
+
+The revision report is streamed in real-time via WebSocket, showing journal candidate cards followed by the detailed critique and actionable revision suggestions.
+
+## 📚 Literature Library
+
+Build and manage your personal reference library with AI-powered organization:
+
+- **FAISS Vector Indexing** — Full-text semantic search across all stored documents, with incremental index merging and SHA256-based deduplication.
+- **Automatic Classification** — Each document is analyzed by an LLM to assign a primary field, secondary subfields, 5-10 keywords, and a 200-word summary.
+- **Controlled Vocabulary** — Load and validate against a custom taxonomy of academic fields and subfields, extensible via API.
+- **User Tags** — Create, edit, and color-code your own tags for flexible personal organization, fully decoupled from the system taxonomy.
+- **REST API** — Full CRUD for documents, tags, and taxonomy: upload, preview, rename, reindex, export (JSON/CSV).
+
+```bash
+# Set your document storage path
+export DOC_PATH="./my-literature"
+```
+
+Upload PDFs, Word documents, Markdown files, and more — the library automatically indexes, classifies, and organizes them for fast retrieval and research.
+
 ## Running with Docker
 
 > **Step 1** - Install Docker
@@ -215,6 +258,21 @@ Features:
 As AI evolves from prompt engineering and RAG to multi-agent systems, this project introduces a multi-agent assistant built on [LangGraph](https://python.langchain.com/v0.1/docs/langgraph/) and [AG2](https://github.com/ag2ai/ag2).
 
 By using multi-agent frameworks and leveraging the collaborative work of multiple agents with specialized skills, the depth and quality of the research process can be significantly improved. Inspired by the [STORM](https://arxiv.org/abs/2402.14207) paper, this project demonstrates how AI agent teams can collaborate on research on a given topic from planning to publication.
+
+### Agent Team Roles
+
+| Agent | Role |
+|-------|------|
+| **Chief Editor** | Orchestrates the LangGraph state graph workflow, coordinating all agents. |
+| **Editor** | Plans the research outline and manages parallel research task execution. |
+| **Researcher** | Performs deep web search across multiple sources for each subtopic. |
+| **Writer** | Composes the introduction, conclusion, and table of contents following style guidelines. |
+| **Reviewer** | Critiques the draft against guidelines and provides structured feedback. |
+| **Reviser** | Revises the draft based on reviewer feedback, returning detailed revision notes. |
+| **Publisher** | Outputs the final report in MD, PDF, and DOCX formats. |
+| **Human** | Interactive approval of research plans via WebSocket or console. |
+
+Workflow: `browser → planner → human → researcher → writer → reviewer → reviser → publisher`, with an inner `reviewer ↔ reviser` loop until the draft is accepted.
 
 Each run can generate research reports of 5-6 pages on average, supporting multiple formats such as PDF, Docx, and Markdown.
 
