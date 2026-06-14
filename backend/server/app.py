@@ -710,6 +710,35 @@ async def extend_taxonomy(request: Request):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@app.get("/api/outputs/{file_path:path}")
+async def download_output_file(file_path: str):
+    """Serve files from the outputs directory for download.
+    Used by paper_submission and other report types to download generated files (MD, PDF, JSON)."""
+    from urllib.parse import unquote
+    # Decode URL-encoded characters (e.g. %20 → space, %5C → backslash)
+    raw_path = unquote(file_path)
+    # Normalize both forward and backward slashes for current OS
+    safe_path = os.path.normpath(raw_path)
+    if safe_path.startswith("..") or os.path.isabs(safe_path):
+        raise HTTPException(status_code=403, detail="Invalid file path")
+
+    full_path = os.path.join("outputs", safe_path)
+    logger.info(f"Download: raw={file_path!r} → safe={safe_path!r} → full={full_path!r}, exists={os.path.isfile(full_path)}")
+    if not os.path.isfile(full_path):
+        raise HTTPException(status_code=404, detail=f"File not found: {safe_path}")
+
+    ext = os.path.splitext(safe_path)[1].lower()
+    mime_map = {
+        ".md": "text/markdown; charset=utf-8",
+        ".pdf": "application/pdf",
+        ".json": "application/json; charset=utf-8",
+    }
+    media_type = mime_map.get(ext, "application/octet-stream")
+    filename = os.path.basename(safe_path)
+
+    return FileResponse(full_path, media_type=media_type, filename=filename)
+
+
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
     await manager.connect(websocket)

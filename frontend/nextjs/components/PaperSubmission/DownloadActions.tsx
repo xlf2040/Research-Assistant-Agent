@@ -16,14 +16,19 @@ export default function DownloadActions({ files }: DownloadActionsProps) {
   const handleDownload = async (filePath: string, label: string) => {
     setDownloading(label);
     try {
-      const encodedPath = encodeURIComponent(filePath);
-      const response = await fetch(`/api/outputs/${encodedPath}`);
+      // 统一处理：去掉 "outputs/" 前缀 + 把所有反斜杠转为正斜杠（兼容 Windows 路径）
+      const normalized = filePath.replace(/^outputs[/\\]/, "").replace(/\\/g, "/");
+      // 路径可能已被某环节 URL 编码（如含 %20），先解码再用 encodeURI 重新编码
+      // encodeURI 保留 / 不编码（encodeURIComponent 会把 / 也编码为 %2F，破坏路由）
+      let clean = normalized;
+      try { clean = decodeURIComponent(normalized); } catch {}
+      const response = await fetch(`/api/outputs/${encodeURI(clean)}`);
       if (!response.ok) throw new Error("Download failed");
       const blob = await response.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = filePath.split("/").pop() || "report";
+      a.download = normalized.split("/").pop() || "report";
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);

@@ -15,10 +15,14 @@ const nextConfig = {
       }
     ],
   },
-  // Proxy /outputs requests to the backend server for generated images
+  // Proxy /outputs and /api/outputs requests to the backend server
   async rewrites() {
     const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://127.0.0.1:8000';
     return [
+      {
+        source: '/api/outputs/:path*',
+        destination: `${backendUrl}/api/outputs/:path*`,
+      },
       {
         source: '/outputs/:path*',
         destination: `${backendUrl}/outputs/:path*`,
