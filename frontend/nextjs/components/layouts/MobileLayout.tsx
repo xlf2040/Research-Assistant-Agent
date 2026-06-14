@@ -36,9 +36,12 @@ export default function Mobile布局({
   const contentRef = mainContentRef || defaultRef;
   const [show设置, setShow设置] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editValue, setEditValue] = useState('');
+  const editInputRef = useRef<HTMLInputElement>(null);
   
   // Get research history from context
-  const { history } = useResearchHistoryContext();
+  const { history, renameResearch } = useResearchHistoryContext();
   
   // Format timestamp for display
   const formatTimestamp = (timestamp: number | string | Date | undefined) => {
@@ -57,6 +60,40 @@ export default function Mobile布局({
   const handleHistoryItemClick = (id: string) => {
     setShowHistory(false);
     window.location.href = `/research/${id}`;
+  };
+  
+  // Start editing a history item name
+  const startEditing = (id: string, currentQuestion: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setEditingId(id);
+    setEditValue(currentQuestion);
+    // Focus after render
+    setTimeout(() => {
+      if (editInputRef.current) {
+        editInputRef.current.focus();
+        editInputRef.current.select();
+      }
+    }, 50);
+  };
+
+  // Save the edited name
+  const saveEdit = (id: string) => {
+    if (editValue.trim()) {
+      renameResearch(id, editValue.trim());
+    }
+    setEditingId(null);
+    setEditValue('');
+  };
+
+  // Handle key down in edit input
+  const handleEditKeyDown = (id: string, e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      saveEdit(id);
+    } else if (e.key === 'Escape') {
+      setEditingId(null);
+      setEditValue('');
+    }
   };
   
   return (
@@ -163,19 +200,46 @@ export default function Mobile布局({
             {history.length > 0 ? (
               <div className="space-y-2">
                 {history.map((item) => (
-                  <button
-                    key={item.id}
-                    onClick={() => handleHistoryItemClick(item.id)}
-                    className="w-full bg-gray-900/60 hover:bg-gray-800 rounded-lg p-3 text-left transition-colors focus:outline-none focus:ring-1 focus:ring-teal-500/50 border border-gray-700/30"
-                  >
-                    <h3 className="text-sm font-medium text-gray-200 line-clamp-1">{item.question}</h3>
-                    <p className="text-xs text-gray-400 mt-1.5 flex items-center">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                      {formatTimestamp(item.timestamp || (item as any).updated_at || (item as any).created_at)}
-                    </p>
-                  </button>
+                  <div key={item.id} className="relative">
+                    {editingId === item.id ? (
+                      <div className="bg-gray-900/60 rounded-lg p-3 border border-teal-500/50">
+                        <input
+                          ref={editInputRef}
+                          type="text"
+                          value={editValue}
+                          onChange={(e) => setEditValue(e.target.value)}
+                          onKeyDown={(e) => handleEditKeyDown(item.id, e)}
+                          onBlur={() => saveEdit(item.id)}
+                          className="w-full bg-gray-700/60 border border-gray-600 rounded-md px-2 py-1 text-sm text-gray-200 focus:outline-none focus:ring-1 focus:ring-teal-500"
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => handleHistoryItemClick(item.id)}
+                        className="w-full bg-gray-900/60 hover:bg-gray-800 rounded-lg p-3 text-left transition-colors focus:outline-none focus:ring-1 focus:ring-teal-500/50 border border-gray-700/30 group pr-16"
+                      >
+                        <h3 className="text-sm font-medium text-gray-200 line-clamp-1">{item.question}</h3>
+                        <p className="text-xs text-gray-400 mt-1.5 flex items-center">
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          {formatTimestamp(item.timestamp || (item as any).updated_at || (item as any).created_at)}
+                        </p>
+                      </button>
+                    )}
+                    {editingId !== item.id && (
+                      <button
+                        onClick={(e) => startEditing(item.id, item.question, e)}
+                        className="absolute top-3 right-3 p-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity text-gray-400 hover:text-teal-400 hover:bg-gray-700"
+                        aria-label="Rename research"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                        </svg>
+                      </button>
+                    )}
+                  </div>
                 ))}
               </div>
             ) : (

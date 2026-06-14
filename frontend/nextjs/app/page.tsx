@@ -104,6 +104,7 @@ export default function Home() {
     updateResearch,
     getResearchById, 
     deleteResearch,
+    renameResearch,
     addChatMessage,
     getChatMessages
   } = useResearchHistoryContext();
@@ -414,7 +415,7 @@ export default function Home() {
 
     const storedConfig = localStorage.getItem('apiVariables');
     const apiVariables = storedConfig ? JSON.parse(storedConfig) : {};
-    const langgraphHostUrl = apiVariables.LANGGRAPH_HOST_URL;
+    const langgraphHostUrl = process.env.NEXT_PUBLIC_LANGGRAPH_HOST_URL || apiVariables.LANGGRAPH_HOST_URL;
 
     // Starting new research - tracking for redirection once complete
     const newResearchStarted = Date.now().toString();
@@ -781,13 +782,13 @@ export default function Home() {
 
       if (!shouldPersist) return;
 
-      // paper_submission：question 兜底使用论文标题或文件名，避免侧栏出现空标题
+      // paper_submission：始终优先使用论文标题，因为用户输入往往只是通用搜索词（如"推荐期刊"）
       let effectiveQuestion = question;
       if (isPaperSubmission) {
         const parsed: any = orderedData.find((d: any) => (d?.content || d?.type) === 'paper_parsed');
         const paperTitle = parsed?.title || parsed?.payload?.title;
         const paperFilename = chatBoxSettings.paper_filename;
-        effectiveQuestion = question || paperTitle || (paperFilename ? `论文投稿建议 · ${paperFilename}` : '论文投稿建议');
+        effectiveQuestion = paperTitle || (paperFilename ? `论文投稿建议 · ${paperFilename}` : question || '论文投稿建议');
       }
 
       if (isInChatMode && currentResearchId) {
@@ -1019,6 +1020,7 @@ export default function Home() {
                 onSelectResearch={handleSelectResearch}
                 onNewResearch={handleStartNewResearch}
                 onDeleteResearch={deleteResearch}
+                onRenameResearch={renameResearch}
                 isOpen={sidebarOpen}
                 toggleSidebar={toggleSidebar}
               />
@@ -1049,6 +1051,7 @@ export default function Home() {
                 onSelectResearch={handleSelectResearch}
                 onNewResearch={handleStartNewResearch}
                 onDeleteResearch={deleteResearch}
+                onRenameResearch={renameResearch}
                 isOpen={sidebarOpen}
                 toggleSidebar={toggleSidebar}
               />

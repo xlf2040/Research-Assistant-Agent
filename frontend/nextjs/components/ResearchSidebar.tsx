@@ -9,6 +9,7 @@ interface ResearchSidebarProps {
   onSelectResearch: (id: string) => void;
   onNewResearch: () => void;
   onDeleteResearch: (id: string) => void;
+  onRenameResearch: (id: string, newQuestion: string) => void;
   isOpen: boolean;
   toggleSidebar: () => void;
 }
@@ -18,10 +19,14 @@ const ResearchSidebar: React.FC<ResearchSidebarProps> = ({
   onSelectResearch,
   onNewResearch,
   onDeleteResearch,
+  onRenameResearch,
   isOpen,
   toggleSidebar,
 }) => {
   const [hoveredItem, setHoveredItem] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editValue, setEditValue] = useState('');
+  const editInputRef = useRef<HTMLInputElement>(null);
   const sidebarRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -39,6 +44,42 @@ const ResearchSidebar: React.FC<ResearchSidebarProps> = ({
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [isOpen, toggleSidebar]);
+
+  // Focus edit input when editing starts
+  useEffect(() => {
+    if (editingId && editInputRef.current) {
+      editInputRef.current.focus();
+      editInputRef.current.select();
+    }
+  }, [editingId]);
+
+  // Start editing a history item name
+  const startEditing = (id: string, currentQuestion: string, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setEditingId(id);
+    setEditValue(currentQuestion);
+  };
+
+  // Save the edited name
+  const saveEdit = (id: string) => {
+    if (editValue.trim()) {
+      onRenameResearch(id, editValue.trim());
+    }
+    setEditingId(null);
+    setEditValue('');
+  };
+
+  // Handle key down in edit input
+  const handleEditKeyDown = (id: string, e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      saveEdit(id);
+    } else if (e.key === 'Escape') {
+      setEditingId(null);
+      setEditValue('');
+    }
+  };
 
   // Format timestamp for display
   const formatTimestamp = (timestamp: number | string | Date | undefined) => {
@@ -199,51 +240,79 @@ const ResearchSidebar: React.FC<ResearchSidebarProps> = ({
                           onMouseEnter={() => setHoveredItem(item.id)}
                           onMouseLeave={() => setHoveredItem(null)}
                         >
-                          
-                          <Link
-                            href={`/research/${item.id}`}
-                            className="block w-full text-left p-3 sm:p-4 pr-10 min-h-[56px] relative"
-                            onClick={(e) => {
-                              // Only prevent default if we're just closing the sidebar
-                              if (!isOpen) {
-                                e.preventDefault();
-                              }
-                              // Call onSelectResearch only if we're actually navigating
-                              if (isOpen) {
-                                onSelectResearch(item.id);
-                              }
-                              // Always close the sidebar
-                              toggleSidebar();
-                            }}
-                          >
-                            <h3 className="font-medium truncate text-gray-200 text-sm sm:text-base transition-colors duration-200 group-hover:text-teal-400 flex items-center gap-1.5">
-                              {item.report_type === 'paper_submission' && (
-                                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-sky-500/20 text-sky-300 border border-sky-500/30 flex-shrink-0">
-                                  投稿
-                                </span>
-                              )}
-                              <span className="truncate">{item.question}</span>
-                            </h3>
-                            <p className="text-xs text-gray-400 mt-1.5 flex items-center">
-                              <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5 mr-1 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                              </svg>
-                              {formatTimestamp(item.timestamp || (item as any).updated_at || (item as any).created_at)}
-                            </p>
-                          </Link>
-                          
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              onDeleteResearch(item.id);
-                            }}
-                            className="absolute top-2 right-2 p-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity text-gray-400 hover:text-white hover:bg-gray-700"
-                            aria-label="Delete research"
-                          >
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                            </svg>
-                          </button>
+                          {editingId === item.id ? (
+                            <div className="p-3 sm:p-4">
+                              <input
+                                ref={editInputRef}
+                                type="text"
+                                value={editValue}
+                                onChange={(e) => setEditValue(e.target.value)}
+                                onKeyDown={(e) => handleEditKeyDown(item.id, e)}
+                                onBlur={() => saveEdit(item.id)}
+                                className="w-full bg-gray-700/60 border border-teal-500/50 rounded-md px-2 py-1 text-sm text-gray-200 focus:outline-none focus:ring-1 focus:ring-teal-500"
+                                onClick={(e) => e.stopPropagation()}
+                              />
+                            </div>
+                          ) : (
+                            <>
+                              <Link
+                                href={`/research/${item.id}`}
+                                className="block w-full text-left p-3 sm:p-4 pr-20 min-h-[56px] relative"
+                                onClick={(e) => {
+                                  // Only prevent default if we're just closing the sidebar
+                                  if (!isOpen) {
+                                    e.preventDefault();
+                                  }
+                                  // Call onSelectResearch only if we're actually navigating
+                                  if (isOpen) {
+                                    onSelectResearch(item.id);
+                                  }
+                                  // Always close the sidebar
+                                  toggleSidebar();
+                                }}
+                              >
+                                <h3 className="font-medium truncate text-gray-200 text-sm sm:text-base transition-colors duration-200 group-hover:text-teal-400 flex items-center gap-1.5">
+                                  {item.report_type === 'paper_submission' && (
+                                    <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-sky-500/20 text-sky-300 border border-sky-500/30 flex-shrink-0">
+                                      投稿
+                                    </span>
+                                  )}
+                                  <span className="truncate">{item.question}</span>
+                                </h3>
+                                <p className="text-xs text-gray-400 mt-1.5 flex items-center">
+                                  <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5 mr-1 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                  </svg>
+                                  {formatTimestamp(item.timestamp || (item as any).updated_at || (item as any).created_at)}
+                                </p>
+                              </Link>
+
+                              {/* Action buttons */}
+                              <div className="absolute top-2 right-2 flex items-center gap-0.5">
+                                <button
+                                  onClick={(e) => startEditing(item.id, item.question, e)}
+                                  className="p-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity text-gray-400 hover:text-teal-400 hover:bg-gray-700"
+                                  aria-label="Rename research"
+                                >
+                                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                                  </svg>
+                                </button>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    onDeleteResearch(item.id);
+                                  }}
+                                  className="p-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity text-gray-400 hover:text-red-400 hover:bg-gray-700"
+                                  aria-label="Delete research"
+                                >
+                                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                  </svg>
+                                </button>
+                              </div>
+                            </>
+                          )}
                         </motion.li>
                       ))}
                     </ul>

@@ -267,6 +267,22 @@ async def update_report(research_id: str, request: Request):
     return {"success": True, "id": research_id}
 
 
+@app.patch("/api/reports/{research_id}/rename")
+async def rename_report(research_id: str, request: Request):
+    existing = await report_store.get_report(research_id)
+    if existing is None:
+        raise HTTPException(status_code=404, detail="Report not found")
+
+    data = await request.json()
+    new_question = data.get("question")
+    if not new_question or not new_question.strip():
+        raise HTTPException(status_code=400, detail="question is required and cannot be empty")
+
+    updated = {**existing, "question": new_question.strip()}
+    await report_store.upsert_report(research_id, updated)
+    return {"success": True, "id": research_id, "question": new_question.strip()}
+
+
 @app.delete("/api/reports/{research_id}")
 async def delete_report(research_id: str):
     existed = await report_store.delete_report(research_id)

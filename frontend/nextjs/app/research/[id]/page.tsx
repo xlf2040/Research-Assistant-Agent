@@ -76,7 +76,8 @@ export default function ResearchPage({ params }: { params: { id: string } }) {
     addChatMessage,
     getChatMessages,
     updateResearch,
-    deleteResearch
+    deleteResearch,
+    renameResearch
   } = useResearchHistoryContext();
 
   // Toggle sidebar
@@ -590,6 +591,7 @@ export default function ResearchPage({ params }: { params: { id: string } }) {
           onSelectResearch={handleSelectResearch}
           onNewResearch={handleNewResearch}
           onDeleteResearch={deleteResearch}
+          onRenameResearch={renameResearch}
           isOpen={sidebarOpen}
           toggleSidebar={toggleSidebar}
         />

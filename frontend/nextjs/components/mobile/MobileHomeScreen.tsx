@@ -22,10 +22,13 @@ export default function MobileHomeScreen({
   handleKeyDown
 }: MobileHomeScreenProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const { history } = useResearchHistoryContext();
+  const { history, renameResearch } = useResearchHistoryContext();
   const [recentHistory, setRecentHistory] = useState<ResearchHistoryItem[]>([]);
   const [isFocused, setIsFocused] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editValue, setEditValue] = useState('');
+  const editInputRef = useRef<HTMLInputElement>(null);
   const submissionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Get recent research history
@@ -57,6 +60,39 @@ export default function MobileHomeScreen({
   const handleHistoryItemClick = useCallback((id: string) => {
     window.location.href = `/research/${id}`;
   }, []);
+
+  // Start editing a history item name
+  const startEditing = useCallback((id: string, currentQuestion: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setEditingId(id);
+    setEditValue(currentQuestion);
+    setTimeout(() => {
+      if (editInputRef.current) {
+        editInputRef.current.focus();
+        editInputRef.current.select();
+      }
+    }, 50);
+  }, []);
+
+  // Save the edited name
+  const saveEdit = useCallback((id: string) => {
+    if (editValue.trim()) {
+      renameResearch(id, editValue.trim());
+    }
+    setEditingId(null);
+    setEditValue('');
+  }, [editValue, renameResearch]);
+
+  // Handle key down in edit input
+  const handleEditKeyDown = useCallback((id: string, e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      saveEdit(id);
+    } else if (e.key === 'Escape') {
+      setEditingId(null);
+      setEditValue('');
+    }
+  }, [saveEdit]);
 
   const handlePromptChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setPromptValue(e.target.value);
@@ -198,16 +234,43 @@ export default function MobileHomeScreen({
           <h2 className="text-sm font-medium text-gray-400 mb-3 px-2">Recent Research</h2>
           <div className="space-y-2">
             {recentHistory.map((item) => (
-              <button
-                key={item.id}
-                onClick={() => handleHistoryItemClick(item.id)}
-                className="w-full bg-gray-800/60 hover:bg-gray-800 rounded-lg p-3 text-left transition-colors focus:outline-none focus:ring-2 focus:ring-gray-600"
-              >
-                <h3 className="text-sm font-medium text-gray-200 line-clamp-1">{item.question}</h3>
-                <p className="text-xs text-gray-500 mt-1">
-                  {new Date(item.timestamp || Date.now()).toLocaleString()}
-                </p>
-              </button>
+              <div key={item.id} className="relative group">
+                {editingId === item.id ? (
+                  <div className="w-full bg-gray-800/60 rounded-lg p-3 border border-teal-500/50">
+                    <input
+                      ref={editInputRef}
+                      type="text"
+                      value={editValue}
+                      onChange={(e) => setEditValue(e.target.value)}
+                      onKeyDown={(e) => handleEditKeyDown(item.id, e)}
+                      onBlur={() => saveEdit(item.id)}
+                      className="w-full bg-gray-700/60 border border-gray-600 rounded-md px-2 py-1 text-sm text-gray-200 focus:outline-none focus:ring-1 focus:ring-teal-500"
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => handleHistoryItemClick(item.id)}
+                    className="w-full bg-gray-800/60 hover:bg-gray-800 rounded-lg p-3 text-left transition-colors focus:outline-none focus:ring-2 focus:ring-gray-600"
+                  >
+                    <h3 className="text-sm font-medium text-gray-200 line-clamp-1 pr-6">{item.question}</h3>
+                    <p className="text-xs text-gray-500 mt-1">
+                      {new Date(item.timestamp || Date.now()).toLocaleString()}
+                    </p>
+                  </button>
+                )}
+                {editingId !== item.id && (
+                  <button
+                    onClick={(e) => startEditing(item.id, item.question, e)}
+                    className="absolute top-3 right-3 p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity text-gray-500 hover:text-teal-400 hover:bg-gray-700"
+                    aria-label="Rename research"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                    </svg>
+                  </button>
+                )}
+              </div>
             ))}
           </div>
           <div className="mt-3 text-center">

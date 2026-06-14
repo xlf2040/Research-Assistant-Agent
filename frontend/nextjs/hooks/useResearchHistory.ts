@@ -372,6 +372,68 @@ export const useResearchHistory = () => {
     }
   };
 
+  // Rename research (update question/title)
+  const renameResearch = async (id: string, newQuestion: string) => {
+    if (!newQuestion || !newQuestion.trim()) {
+      console.error('New question cannot be empty');
+      return false;
+    }
+
+    try {
+      const response = await fetch(`/api/reports/${id}/rename`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ question: newQuestion.trim() }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`API error: ${response.status}`);
+      }
+
+      // Update local state
+      setHistory(prev =>
+        prev.map(item =>
+          item.id === id ? { ...item, question: newQuestion.trim() } : item
+        )
+      );
+
+      // Update localStorage
+      const localHistory = localStorage.getItem('researchHistory');
+      if (localHistory) {
+        const parsedHistory = JSON.parse(localHistory);
+        const updatedHistory = parsedHistory.map((item: any) =>
+          item.id === id ? { ...item, question: newQuestion.trim() } : item
+        );
+        localStorage.setItem('researchHistory', JSON.stringify(updatedHistory));
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Error renaming research:', error);
+
+      // Update local state anyway
+      setHistory(prev =>
+        prev.map(item =>
+          item.id === id ? { ...item, question: newQuestion.trim() } : item
+        )
+      );
+
+      // Update localStorage
+      const localHistory = localStorage.getItem('researchHistory');
+      if (localHistory) {
+        const parsedHistory = JSON.parse(localHistory);
+        const updatedHistory = parsedHistory.map((item: any) =>
+          item.id === id ? { ...item, question: newQuestion.trim() } : item
+        );
+        localStorage.setItem('researchHistory', JSON.stringify(updatedHistory));
+      }
+
+      return false;
+    }
+  };
+
   // Add chat message
   const addChatMessage = async (id: string, message: ChatMessage) => {
     try {
@@ -504,6 +566,7 @@ export const useResearchHistory = () => {
     updateResearch,
     getResearchById,
     deleteResearch,
+    renameResearch,
     addChatMessage,
     getChatMessages,
     clearHistory

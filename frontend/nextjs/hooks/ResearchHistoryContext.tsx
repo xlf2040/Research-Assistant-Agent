@@ -12,6 +12,7 @@ interface ResearchHistoryContextType {
   updateResearch: (id: string, answer: string, orderedData: Data[], reportType?: string) => Promise<boolean>;
   getResearchById: (id: string) => Promise<ResearchHistoryItem | null>;
   deleteResearch: (id: string) => Promise<boolean>;
+  renameResearch: (id: string, newQuestion: string) => Promise<boolean>;
   addChatMessage: (id: string, message: ChatMessage) => Promise<boolean>;
   getChatMessages: (id: string) => ChatMessage[];
   clearHistory: () => Promise<boolean>;
