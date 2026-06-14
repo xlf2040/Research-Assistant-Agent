@@ -6,6 +6,7 @@ import ImageSection from './ResearchBlocks/ImageSection';
 import SubQuestions from './ResearchBlocks/elements/SubQuestions';
 import LogsSection from './ResearchBlocks/LogsSection';
 import AccessReport from './ResearchBlocks/AccessReport';
+import LanggraphButton from './ResearchBlocks/LanggraphButton';
 import { preprocessOrderedData } from '../utils/dataProcessing';
 import { Data } from '../types/data';
 
@@ -66,10 +67,12 @@ export const ResearchResults: React.FC<ResearchResultsProps> = ({
     .filter(data => data.type === 'reportBlock')
     .pop();
   const subqueriesComponent = groupedData.find(data => data.content === 'subqueries');
+  const langgraphButton = groupedData.find(data => data.type === 'langgraphButton');
 
   return (
     <>
       {initialQuestion && <Question question={initialQuestion.content} />}
+      {langgraphButton && <LanggraphButton link={langgraphButton.link} />}
       {orderedData.length > 0 && <LogsSection logs={allLogs} />}
       {subqueriesComponent && (
         <SubQuestions

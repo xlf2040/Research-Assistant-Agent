@@ -139,6 +139,7 @@ async def handle_start_command(websocket, data: str, manager):
         mcp_configs,
         max_search_results,
         filenames,
+        paper_filename,
     ) = extract_command_data(json_data)
 
     if not task or not report_type:

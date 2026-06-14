@@ -45,10 +45,6 @@ export const preprocessOrderedData = (data: Data[]) => {
     } else if (type === 'chat') {
       groupedData.push({ type: 'chat', content: content });
     } else {
-      if (currentReportGroup) {
-        currentReportGroup = null;
-      }
-
       if (content === 'subqueries') {
         if (currentAccordionGroup) {
           currentAccordionGroup = null;
@@ -92,7 +88,10 @@ export const preprocessOrderedData = (data: Data[]) => {
           groupedData.push(currentSourceGroup);
           sourceBlockEncountered = true;
         }
-      } else if (type !== 'path' && content !== '') {
+      } else if (type === 'path') {
+        // path 事件只是文件路径通知，不应该删除已累积的 reportBlock
+        groupedData.push(item);
+      } else if (content !== '') {
         if (sourceBlockEncountered) {
           if (!currentAccordionGroup) {
             currentAccordionGroup = { type: 'accordionBlock', items: [] };
@@ -103,21 +102,12 @@ export const preprocessOrderedData = (data: Data[]) => {
           groupedData.push(item);
         }
       } else {
+        // content === '' 的情况：重置各组状态，但保留 reportBlock
         if (currentAccordionGroup) {
           currentAccordionGroup = null;
         }
         if (currentSourceGroup) {
           currentSourceGroup = null;
-        }
-        if (currentReportGroup) {
-          // Find and remove the previous reportBlock
-          const reportBlockIndex = groupedData.findIndex(
-            item => item === currentReportGroup
-          );
-          if (reportBlockIndex !== -1) {
-            groupedData.splice(reportBlockIndex, 1);
-          }
-          currentReportGroup = null;  // Reset the current report group
         }
         groupedData.push(item);
       }
