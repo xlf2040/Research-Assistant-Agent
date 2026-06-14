@@ -2,112 +2,112 @@
 
 ####
 
-[English](README.md) | [中文](README-zh_CN.md) | [日本語](README-ja_JP.md) | [한국어](README-ko_KR.md)
+[English](README.md) | [中文](README-zh_CN.md)
 
 </div>
 
-# 🔎 科研agent助手
+# 🔎 Research Agent Assistant
 
-**科研agent助手是一个开源的深度研究智能体，专为网页和本地文档的自动化研究任务而设计，由立峰项独立开发完成。**
+**Research Agent Assistant is an open-source deep research agent designed for automated research tasks on both web and local documents, independently developed by Li Fengxiang.**
 
-该智能体生成详细、事实性、无偏见的研究报告并附带引用。科研agent助手提供完整的定制选项，可创建专属的领域特定研究智能体。受 [Plan-and-Solve](https://arxiv.org/abs/2305.04091) 和 [RAG](https://arxiv.org/abs/2005.11401) 论文启发，科研agent助手通过并行化智能体工作解决信息误导、速度、确定性和可靠性问题，提供稳定的性能和更快的处理速度。
+The agent generates detailed, factual, and unbiased research reports with citations. Research Agent Assistant provides a full suite of customization options to create tailor-made and domain-specific research agents. Inspired by the recent [Plan-and-Solve](https://arxiv.org/abs/2305.04091) and [RAG](https://arxiv.org/abs/2005.11401) papers, Research Agent Assistant addresses misinformation, speed, determinism, and reliability by offering stable performance and increased speed through parallelized agent work.
 
-**我们的使命是通过 AI 赋能个人和组织，获取准确、无偏见、事实性的信息。**
+**Our mission is to empower individuals and organizations with accurate, unbiased, and factual information through AI.**
 
-## 为什么选择科研agent助手？
+## Why Research Agent Assistant?
 
-- 手动研究的客观结论可能需要数周时间，耗费大量资源和精力。
-- 基于过时数据训练的 LLM 可能产生幻觉，不适用于当前的研究任务。
-- 当前 LLM 存在 token 限制，不足以生成长篇研究报告。
-- 现有服务中有限的网络来源导致错误信息和浅薄结果。
-- 选择性的网络来源可能引入研究偏见。
+- Manual research tasks to form objective conclusions can take weeks, consuming significant resources and effort.
+- LLMs trained on outdated data may hallucinate and are unsuitable for current research tasks.
+- Current LLMs have token limitations that are insufficient for generating long-form research reports.
+- Limited web sources in existing services lead to misinformation and shallow results.
+- Selective web sources can introduce research bias.
 
-## 架构
+## Architecture
 
-核心理念是利用「规划器」和「执行器」智能体。规划器生成研究问题，而执行器智能体收集相关信息。发布器随后将所有发现汇总成一份全面的报告。
+The core idea is to utilize "Planner" and "Executor" agents. The Planner generates research questions, while the Executor agents collect relevant information. The Publisher then aggregates all findings into a comprehensive report.
 
-步骤：
-* 基于研究查询创建任务特定智能体。
-* 生成一系列共同形成对任务客观观点的问题。
-* 使用爬虫智能体收集每个问题的信息。
-* 总结并追踪每个资源的来源。
-* 过滤并汇总成最终研究报告。
+Steps:
+* Create task-specific agents based on research queries.
+* Generate a series of questions that collectively form an objective view of the task.
+* Use crawler agents to collect information for each question.
+* Summarize and track sources for each resource.
+* Filter and aggregate into a final research report.
 
-## 功能特性
+## Features
 
-- 📝 使用网页和本地文档生成详细的研究报告。
-- 🖼️ 智能图片抓取和报告过滤。
-- 🍌 **AI 生成的内嵌图片**，使用 Google Gemini (Nano Banana) 生成可视化插画。
-- 📜 生成超过 2,000 字的详细报告。
-- 🌐 聚合超过 20 个来源以得出客观结论。
-- 🖥️ 提供轻量级（HTML/CSS/JS）和生产级（NextJS + Tailwind）两种前端版本。
-- 🔍 JavaScript 启用的网页抓取。
-- 📂 在整个研究过程中维护记忆和上下文。
-- 📄 导出报告为 PDF、Word 等多种格式。
+- 📝 Generate detailed research reports using web and local documents.
+- 🖼️ Smart image scraping and report filtering.
+- 🍌 **AI-generated inline images** using Google Gemini (Nano Banana) to generate visualization illustrations.
+- 📜 Generate detailed reports exceeding 2,000 words.
+- 🌐 Aggregate over 20 sources to derive objective conclusions.
+- 🖥️ Provide both lightweight (HTML/CSS/JS) and production-grade (NextJS + Tailwind) frontend versions.
+- 🔍 JavaScript-enabled web scraping.
+- 📂 Maintain memory and context throughout the research process.
+- 📄 Export reports in multiple formats like PDF, Word, etc.
 
-## ⚙️ 快速开始
+## ⚙️ Quick Start
 
-### 安装
+### Installation
 
-1. 安装 Python 3.11 或更高版本。[参考指南](https://www.tutorialsteacher.com/python/install-python)。
-2. 进入项目目录：
-
-    ```bash
-    cd gpt-researcher
-    ```
-
-3. 设置 API 密钥，可通过环境变量导出或保存到 `.env` 文件：
+1. Install Python 3.11 or higher. [Reference Guide](https://www.tutorialsteacher.com/python/install-python).
+2. Navigate to the project directory:
 
     ```bash
-    export OPENAI_API_KEY={你的 OpenAI API 密钥}
-    export TAVILY_API_KEY={你的 Tavily API 密钥}
+    cd research-agent
     ```
 
-    （可选）如需增强追踪和可观测性：
+3. Set up API keys by exporting environment variables or saving to a `.env` file:
+
+    ```bash
+    export OPENAI_API_KEY={Your OpenAI API Key}
+    export TAVILY_API_KEY={Your Tavily API Key}
+    ```
+
+    (Optional) For enhanced tracing and observability:
 
     ```bash
     # export LANGCHAIN_TRACING_V2=true
-    # export LANGCHAIN_API_KEY={你的 LangChain API 密钥}
+    # export LANGCHAIN_API_KEY={Your LangChain API Key}
     ```
 
-    如果使用自定义 OpenAI 兼容 API（如本地模型、其他服务商）：
+    If using custom OpenAI-compatible APIs (e.g., local models, other service providers):
 
     ```bash
-    export OPENAI_BASE_URL={你的自定义 API 基础 URL}
+    export OPENAI_BASE_URL={Your custom API base URL}
     ```
 
-4. 安装依赖并启动服务：
+4. Install dependencies and start the service:
 
     ```bash
     pip install -r requirements.txt
     python -m uvicorn main:app --reload
     ```
 
-访问 [http://localhost:8000](http://localhost:8000) 开始使用。
+Visit [http://localhost:8000](http://localhost:8000) to get started.
 
-如需其他环境搭建方式（如 Poetry 或虚拟环境），可参考项目内文档。
+For other environment setup methods (e.g., Poetry or virtual environments), please refer to the documentation within the project.
 
-### 代码示例
+### Code Example
 
 ```python
 ...
 from gpt_researcher import GPTResearcher
 
-query = "为什么英伟达股票在涨？"
+query = "Why is Nvidia stock rising?"
 researcher = GPTResearcher(query=query)
-# 针对给定查询进行研究
+# Conduct research on the given query
 research_result = await researcher.conduct_research()
-# 撰写报告
+# Write report
 report = await researcher.write_report()
 ...
 ```
 
-### 🔧 MCP 客户端
+### 🔧 MCP Client
 
-科研agent助手支持 MCP 集成，可连接 GitHub 仓库、数据库和自定义 API 等专业数据源，实现数据源与网络搜索的混合研究。
+Research Agent Assistant supports MCP integration to connect with specialized data sources like GitHub repositories, databases, and custom APIs, enabling hybrid research with data sources and web search.
 
 ```bash
-export RETRIEVER=tavily,mcp  # 启用混合网页 + MCP 研究
+export RETRIEVER=tavily,mcp  # Enable hybrid web + MCP research
 ```
 
 ```python
@@ -119,7 +119,7 @@ async def mcp_research_example():
     os.environ["RETRIEVER"] = "tavily,mcp"
     
     researcher = GPTResearcher(
-        query="有哪些优秀的开源网页研究智能体？",
+        query="What are some good open-source web research agents?",
         mcp_configs=[
             {
                 "name": "github",
@@ -135,129 +135,130 @@ async def mcp_research_example():
     return report
 ```
 
-## 🍌 内嵌图片生成
+## 🍌 Inline Image Generation
 
-科研agent助手可以自动生成 AI 创作的插画并将其嵌入到你的研究报告中，使用 Google 的 Gemini 模型 (Nano Banana)。
+Research Agent Assistant can automatically generate AI-created illustrations and embed them in your research reports using Google's Gemini models (Nano Banana).
 
 ```bash
-# 在 .env 文件中启用
+# Enable in your .env file
 IMAGE_GENERATION_ENABLED=true
 GOOGLE_API_KEY=your_google_api_key
 IMAGE_GENERATION_MODEL=models/gemini-2.5-flash-image
 ```
 
-启用后，系统将：
-1. 分析研究上下文以识别可视化机会
-2. 在研究阶段预先生成 2-3 张相关图片
-3. 在撰写报告时以内嵌方式嵌入
+When enabled, the system will:
+1. Analyze your research context to identify visualization opportunities
+2. Pre-generate 2-3 relevant images during the research phase
+3. Embed them inline as the report is written
 
-图片采用深色模式样式生成，与科研agent助手 UI 风格匹配，具有专业的信息图表美学和蓝绿色调点缀。
+Images are generated with dark-mode styling that matches the Research Agent Assistant UI, featuring professional infographic aesthetics with teal accents.
 
-## ✨ 深度研究
+## ✨ Deep Research
 
-科研agent助手现已包含深度研究——一种高级递归研究工作流，以智能体的深度和广度探索主题。此功能采用树形探索模式，在深入子主题的同时保持对研究主题的全面视角。
+Research Agent Assistant now includes Deep Research - an advanced recursive research workflow that explores topics with agentic depth and breadth. This feature employs a tree exploration pattern, maintaining a comprehensive perspective on the research topic while diving into subtopics.
 
-- 🌳 可配置深度和广度的树形探索
-- ⚡️ 并发处理以加快速度
-- 🤝 跨研究分支的智能上下文管理
-- ⏱️ 每次深度研究约需 5 分钟
+- 🌳 Tree exploration with configurable depth and breadth
+- ⚡️ Concurrent processing for faster speed
+- 🤝 Intelligent context management across research branches
+- ⏱️ Each deep research takes approximately 5 minutes
 
-## 使用 Docker 运行
+## Running with Docker
 
-> **步骤 1** - 安装 Docker
+> **Step 1** - Install Docker
 
-> **步骤 2** - 复制 `.env.example` 文件，将你的 API 密钥添加到复制的文件中，保存为 `.env`
+> **Step 2** - Copy the `.env.example` file, add your API keys to the copied file, and save it as `.env`
 
-> **步骤 3** - 在 docker-compose 文件中注释掉你不想通过 Docker 运行的服务。
+> **Step 3** - Comment out services you don't want to run via Docker in the docker-compose file.
 
 ```bash
 docker-compose up --build
 ```
 
-如果上述命令无效，尝试去掉横线运行：
+If the above command doesn't work, try running without the hyphen:
+
 ```bash
 docker compose up --build
 ```
 
-> **步骤 4** - 默认情况下，此流程将启动 2 个服务：
- - Python 服务运行在 localhost:8000<br>
- - React 应用运行在 localhost:3000<br>
+> **Step 4** - By default, this process will start 2 services:
+ - Python service running on localhost:8000<br>
+ - React app running on localhost:3000<br>
 
-在浏览器中访问 localhost:3000，开始研究！
+Visit localhost:3000 in your browser and start researching!
 
-## 📄 本地文档研究
+## 📄 Local Document Research
 
-你可以指示科研agent助手基于本地文档运行研究任务。目前支持的文件格式：PDF、纯文本、CSV、Excel、Markdown、PowerPoint 和 Word 文档。
+You can instruct Research Agent Assistant to run research tasks based on your local documents. Currently supported file formats: PDF, plain text, CSV, Excel, Markdown, PowerPoint, and Word documents.
 
-步骤 1：添加环境变量 `DOC_PATH` 指向你的文档所在文件夹。
+Step 1: Add the environment variable `DOC_PATH` pointing to your document folder.
 
 ```bash
 export DOC_PATH="./my-docs"
 ```
 
-步骤 2：
- - 如果在 localhost:8000 运行前端应用，只需从「报告来源」下拉选项中选择「我的文档」。
- - 如果以代码方式使用，传递 `report_source` 参数为 "local"。
+Step 2:
+ - If running the frontend app on localhost:8000, simply select "My Documents" from the "Report Source" dropdown.
+ - If using programmatically, pass the `report_source` argument as "local".
 
-## 🤖 MCP 服务
+## 🤖 MCP Server
 
-科研agent助手 MCP Server 使 Claude 等 AI 应用能够进行深度研究。虽然 LLM 应用可以通过 MCP 访问网络搜索工具，但科研agent助手 MCP 提供更深入、更可靠的研究结果。
+The Research Agent Assistant MCP Server enables AI applications like Claude to conduct deep research. While LLM apps can access web search tools with MCP, Research Agent Assistant MCP delivers deeper, more reliable research results.
 
-功能特性：
-- 为 AI 助手提供深度研究能力
-- 通过优化上下文使用获得更高质量的信息
-- 为 LLM 提供更全面、更优质推理的结果
-- Claude Desktop 集成
+Features:
+- Provide deep research capabilities for AI assistants
+- Obtain higher quality information through optimized context usage
+- Deliver more comprehensive and higher quality reasoning results for LLMs
+- Claude Desktop integration
 
-## 👪 多智能体助手
+## 👪 Multi-Agent Assistant
 
-随着 AI 从提示工程和 RAG 向多智能体系统演进，本项目引入基于 [LangGraph](https://python.langchain.com/v0.1/docs/langgraph/) 和 [AG2](https://github.com/ag2ai/ag2) 构建的多智能体助手。
+As AI evolves from prompt engineering and RAG to multi-agent systems, this project introduces a multi-agent assistant built on [LangGraph](https://python.langchain.com/v0.1/docs/langgraph/) and [AG2](https://github.com/ag2ai/ag2).
 
-通过使用多智能体框架，利用多个具备专业技能智能体的协同工作，研究过程的深度和质量可显著提升。受 [STORM](https://arxiv.org/abs/2402.14207) 论文启发，本项目展示了 AI 智能体团队如何协作完成从规划到出版的给定主题研究。
+By using multi-agent frameworks and leveraging the collaborative work of multiple agents with specialized skills, the depth and quality of the research process can be significantly improved. Inspired by the [STORM](https://arxiv.org/abs/2402.14207) paper, this project demonstrates how AI agent teams can collaborate on research on a given topic from planning to publication.
 
-平均每次运行可生成 5-6 页的研究报告，支持 PDF、Docx 和 Markdown 等多种格式。
+Each run can generate research reports of 5-6 pages on average, supporting multiple formats such as PDF, Docx, and Markdown.
 
-## 🔍 可观测性
+## 🔍 Observability
 
-科研agent助手支持 **LangSmith** 进行增强的追踪和可观测性，使调试和优化复杂的多智能体工作流更加容易。
+Research Agent Assistant supports **LangSmith** for enhanced tracing and observability, making it easier to debug and optimize complex multi-agent workflows.
 
-启用追踪：
-1. 设置以下环境变量：
+To enable tracing:
+1. Set the following environment variables:
    ```bash
    export LANGCHAIN_TRACING_V2=true
    export LANGCHAIN_API_KEY=your_api_key
-   export LANGCHAIN_PROJECT="gpt-researcher"
+   export LANGCHAIN_PROJECT="research-agent"
    ```
-2. 照常运行研究任务。所有基于 LangGraph 的智能体交互将自动追踪并在 LangSmith 仪表板中可视化。
+2. Run research tasks as usual. All LangGraph-based agent interactions will be automatically traced and visualized in the LangSmith dashboard.
 
-## 🖥️ 前端应用
+## 🖥️ Frontend Application
 
-科研agent助手配备增强前端以改善用户体验并简化研究流程。前端提供：
+Research Agent Assistant features an enhanced frontend to improve the user experience and streamline the research process. The frontend provides:
 
-- 直观的研究查询输入界面
-- 研究任务的实时进度追踪
-- 研究发现的交互式展示
-- 可定制设置以打造个性化研究体验
+- Intuitive research query input interface
+- Real-time progress tracking for research tasks
+- Interactive presentation of research findings
+- Customizable settings for a personalized research experience
 
-两种部署选项：
-1. FastAPI 提供的轻量级静态前端
-2. 功能丰富的 NextJS 应用，提供高级功能
+Two deployment options:
+1. Lightweight static frontend served by FastAPI
+2. Feature-rich NextJS application with advanced capabilities
 
-## ✉️ 联系方式
+## ✉️ Contact
 
-- 作者邮箱：2329427907@qq.com
+- Author Email: 2329427907@qq.com
 
-## 🛡 免责声明
+## 🛡 Disclaimer
 
-本项目科研agent助手是一个实验性应用，按「原样」提供，不作任何明示或暗示的担保。我们基于 Apache 2 许可协议分享代码，仅供学术目的使用。本文内容不构成学术建议，也不建议用于学术或研究论文中。
+This project, Research Agent Assistant, is an experimental application provided "as-is" without any warranty, express or implied. We share code for academic purposes under the Apache 2 license. Nothing herein is academic advice, and NOT a recommendation to use in academic or research papers.
 
-我们对无偏见研究主张的看法：
-1. 科研agent助手的主要目标是减少不正确和有偏见的事实。我们假设抓取的网站越多，错误数据的可能性就越小。通过为每项研究抓取多个网站并选择最常见的信息，它们全部出错的概率极低。
-2. 我们不旨在消除偏见；而是尽可能减少偏见。**我们在此作为一个共同体，探索最有效的人/LLM 交互方式。**
-3. 在研究中，人们也容易产生偏见，因为大多数人对他们所研究的主题已有自己的看法。本工具抓取多种观点，并会公正地解释一个带有偏见的人永远不会读到的多样化视角。
+Our view on unbiased research claims:
+1. The main goal of Research Agent Assistant is to reduce incorrect and biased facts. We assume that the more websites we scrape, the lower the probability of erroneous data. By scraping multiple websites for each research task and selecting the most common information, the probability of them all being wrong is extremely low.
+2. We do not aim to eliminate bias; rather, we aim to reduce bias as much as possible. **We are here as a community to explore the most effective human/LLM interactions.**
+3. In research, people can also easily be biased because most have their own views on the topics they research. This tool scrapes a variety of perspectives and will fairly explain diverse viewpoints that a biased person would never read.
 
 ---
 
 <p align="right">
-  <a href="#top">⬆️ 回到顶部</a>
+  <a href="#top">⬆️ Back to Top</a>
 </p>
