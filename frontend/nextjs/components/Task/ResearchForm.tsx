@@ -4,6 +4,7 @@ import ToneSelector from "../Settings/ToneSelector";
 import MCPSelector from "../Settings/MCPSelector";
 import LayoutSelector from "../Settings/LayoutSelector";
 import DomainFilter from "./DomainFilter";
+import PaperSelector from "./PaperSelector";
 import { useAnalytics } from "../../hooks/useAnalytics";
 import { ChatBoxSettings, Domain, MCPConfig } from '@/types/data';
 
@@ -127,6 +128,9 @@ export default function ResearchForm({
           <option value="detailed_report">
             详细 - 深入详尽 (~5分钟)
           </option>
+          <option value="paper_submission">
+            论文投稿建议
+          </option>
         </select>
       </div>
 
@@ -149,17 +153,30 @@ export default function ResearchForm({
 
       
 
-      {report_source === "local" || report_source === "hybrid" ? (
-        <FileUpload />
-      ) : null}
+      {report_type === "paper_submission" ? (
+        <PaperSelector
+          chatBoxSettings={chatBoxSettings}
+          setChatBoxSettings={setChatBoxSettings}
+        />
+      ) : (
+        <>
+          {report_source === "local" || report_source === "hybrid" ? (
+            <FileUpload />
+          ) : null}
+        </>
+      )}
       
-      <ToneSelector tone={tone} onToneChange={onToneChange} />
+      {report_type !== "paper_submission" && (
+        <ToneSelector tone={tone} onToneChange={onToneChange} />
+      )}
 
-      <MCPSelector 
-        mcpEnabled={chatBoxSettings.mcp_enabled || false}
-        mcpConfigs={chatBoxSettings.mcp_configs || []}
-        onMCPChange={onMCPChange}
-      />
+      {report_type !== "paper_submission" && (
+        <MCPSelector 
+          mcpEnabled={chatBoxSettings.mcp_enabled || false}
+          mcpConfigs={chatBoxSettings.mcp_configs || []}
+          onMCPChange={onMCPChange}
+        />
+      )}
       
       <LayoutSelector layoutType={layoutType || 'copilot'} onLayoutChange={onLayoutChange} />
 

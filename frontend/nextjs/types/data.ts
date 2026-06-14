@@ -48,6 +48,60 @@ export interface ChatBoxSettings {
   mcp_enabled: boolean;
   mcp_configs: MCPConfig[];
   mcp_strategy?: string;
+  paper_filename?: string;
+}
+
+// Paper Submission types
+export interface JournalCandidate {
+  journal_id: string;
+  name: string;
+  issn?: string;
+  publisher?: string;
+  impact_factor?: number;
+  scope: string;
+  homepage?: string;
+  is_open_access: boolean;
+  avg_review_weeks?: number;
+  match_score: number;
+  match_reason: string;
+}
+
+export interface Finding {
+  dimension: string;
+  dimensionName?: string;
+  severity: 'critical' | 'major' | 'minor';
+  section?: string;
+  paragraphIdx?: number;
+  lineRange?: number[];
+  snippet?: string;
+  issue: string;
+  suggestion: string;
+}
+
+export interface Annotation extends Finding {
+  id: string;
+}
+
+export interface PaperSubmissionMessage {
+  type: 'paper_parsed' | 'journal_card' | 'journals_complete'
+    | 'critique_section' | 'annotations_ready' | 'progress' | 'error';
+  payload?: any;
+  // paper_parsed fields
+  title?: string;
+  keywords?: string[];
+  primary_field?: string;
+  sections_count?: number;
+  // journal_card fields  
+  // critique_section fields
+  dimension?: string;
+  dimension_name?: string;
+  findings?: Finding[];
+  count?: number;
+  // annotations_ready fields
+  annotations?: Annotation[];
+  files?: { md?: string; pdf?: string; annotations?: string };
+  // progress/error fields
+  content?: string;
 }
 
 export interface Domain {

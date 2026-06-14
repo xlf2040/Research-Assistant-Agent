@@ -7,7 +7,7 @@ import { useResearchHistoryContext } from '@/hooks/ResearchHistoryContext';
 import { useScrollHandler } from '@/hooks/useScrollHandler';
 import { startLanggraphResearch } from '../components/Langgraph/Langgraph';
 import findDifferences from '../helpers/findDifferences';
-import { Data, ChatBoxSettings, QuestionData, ChatMessage, ChatData } from '../types/data';
+import { Data, ChatBoxSettings, QuestionData, ChatMessage, ChatData, PaperSubmissionMessage } from '../types/data';
 import { preprocessOrderedData } from '../utils/dataProcessing';
 import { toast } from "react-hot-toast";
 import { v4 as uuidv4 } from 'uuid';
@@ -19,6 +19,8 @@ import ResearchContent from "@/components/research/ResearchContent";
 import CopilotResearchContent from "@/components/research/CopilotResearchContent";
 import HumanFeedback from "@/components/HumanFeedback";
 import ResearchSidebar from "@/components/ResearchSidebar";
+import PaperSubmissionReportView from "@/components/PaperSubmission/PaperSubmissionReportView";
+import { sendSelectJournal } from "@/helpers/paperSubmissionApi";
 import { getAppropriateLayout } from "@/utils/getLayout";
 
 // Import the mobile components
@@ -75,6 +77,7 @@ export default function Home() {
   const [currentResearchId, setCurrentResearchId] = useState<string | null>(null);
   const [isMobile, setIsMobile] = useState(false);
   const [isProcessingChat, setIsProcessingChat] = useState(false);
+  const [paperSubmissionMessages, setPaperSubmissionMessages] = useState<PaperSubmissionMessage[]>([]);
 
   // Use our custom scroll handler
   const { showScrollButton, scrollToBottom } = useScrollHandler(mainContentRef);
@@ -105,17 +108,14 @@ export default function Home() {
     getChatMessages
   } = useResearchHistoryContext();
 
-  // Only initialize the WebSocket hook reference, don't connect automatically
-  const websocketRef = useRef(useWebSocket(
+  // Initialize WebSocket hook directly so socket state stays current
+  const { socket, initializeWebSocket } = useWebSocket(
     setOrderedData,
     setAnswer,
     setLoading,
     setShowHumanFeedback,
     setQuestionForHuman
-  ));
-  
-  // Use the reference to access websocket functions
-  const { socket, initializeWebSocket } = websocketRef.current;
+  );
 
   const handleFeedbackSubmit = (feedback: string | null) => {
     if (socket) {
@@ -452,6 +452,14 @@ export default function Home() {
           window.history.replaceState({}, '', '/');
         }
       }
+
+      // Paper Submission 模式：注入 paper_filename 到 start payload
+      if (chatBoxSettings.report_type === 'paper_submission' && chatBoxSettings.paper_filename) {
+        extraParams.filenames = [chatBoxSettings.paper_filename];
+        extraParams.paper_filename = chatBoxSettings.paper_filename;
+        extraParams.report_source = 'local';
+      }
+
       initializeWebSocket(newQuestion, chatBoxSettings, Object.keys(extraParams).length > 0 ? extraParams : undefined);
     }
   };
@@ -678,6 +686,13 @@ export default function Home() {
     setAnswer("");
     setOrderedData([]);
     setAllLogs([]);
+    setPaperSubmissionMessages([]);
+
+    // Reset report_type back to default so paper_submission view is replaced
+    setChatBoxSettings((prev) => ({
+      ...prev,
+      report_type: "research_report",
+    }));
 
     // Reset feedback states
     setShowHumanFeedback(false);
@@ -853,6 +868,41 @@ export default function Home() {
     setAllLogs(newLogs);
   }, [orderedData]);
 
+  // Intercept paper_submission messages from orderedData
+  useEffect(() => {
+    if (chatBoxSettings.report_type !== 'paper_submission') return;
+    
+    // Extract paper_submission-specific messages from orderedData
+    const psMessages: PaperSubmissionMessage[] = orderedData
+      .filter((d: any) => {
+        const t = d.type || '';
+        const c = d.content || '';
+        return t === 'logs' && (
+          c === 'paper_parsed' || c === 'journal_card' || c === 'journals_complete' ||
+          c === 'critique_section' || c === 'annotations_ready' || c === 'progress' || c === 'error'
+        ) || ['paper_parsed', 'journal_card', 'journals_complete', 'critique_section', 'annotations_ready', 'progress', 'error'].includes(t);
+      })
+      .map((d: any) => ({
+        type: d.content || d.type,
+        payload: d.payload || d.output,
+        title: d.title,
+        keywords: d.keywords,
+        primary_field: d.primary_field,
+        sections_count: d.sections_count,
+        dimension: d.dimension,
+        dimension_name: d.dimension_name,
+        findings: d.findings,
+        count: d.count,
+        annotations: d.annotations,
+        files: d.files,
+        content: typeof d.output === 'string' ? d.output : d.content,
+      } as PaperSubmissionMessage));
+
+    if (psMessages.length > 0) {
+      setPaperSubmissionMessages(psMessages);
+    }
+  }, [orderedData, chatBoxSettings.report_type]);
+
   // Save chatBoxSettings to localStorage when they change
   useEffect(() => {
     localStorage.setItem('chatBoxSettings', JSON.stringify(chatBoxSettings));
@@ -966,7 +1016,13 @@ export default function Home() {
                 toggleSidebar={toggleSidebar}
               />
               
-              {chatBoxSettings.layoutType === 'copilot' ? (
+              {chatBoxSettings.report_type === 'paper_submission' ? (
+                <PaperSubmissionReportView
+                  orderedMessages={paperSubmissionMessages}
+                  onSelectJournal={(journalId) => sendSelectJournal(socket, journalId)}
+                  onNewResearch={handleStartNewResearch}
+                />
+              ) : chatBoxSettings.layoutType === 'copilot' ? (
                 <CopilotResearchContent
                   orderedData={orderedData}
                   answer={answer}

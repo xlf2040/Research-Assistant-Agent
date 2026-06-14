@@ -25,6 +25,7 @@ class ReportType(Enum):
     DetailedReport = "detailed_report"
     SubtopicReport = "subtopic_report"
     DeepResearch = "deep"
+    PaperSubmission = "paper_submission"
 
 
 class ReportSource(Enum):

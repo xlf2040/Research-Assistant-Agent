@@ -9,7 +9,7 @@ from typing import Dict, List
 
 from fastapi import WebSocket
 
-from backend.report_type import BasicReport, DetailedReport
+from backend.report_type import BasicReport, DetailedReport, PaperSubmissionReport
 
 from gpt_researcher.utils.enum import ReportType, Tone
 from gpt_researcher.actions import stream_output  # Import stream_output
@@ -144,6 +144,20 @@ async def run_agent(task, report_type, report_source, source_urls, document_urls
             headers=headers
         )
         report = report.get("report", "")
+
+    elif report_type == ReportType.PaperSubmission.value:
+        # Paper Submission Advisor - two-stage interactive flow
+        paper_filename = ""
+        if filenames and len(filenames) > 0:
+            paper_filename = filenames[0]
+        researcher = PaperSubmissionReport(
+            query=task,
+            paper_filename=paper_filename,
+            websocket=logs_handler,
+            config_path=config_path,
+            headers=headers,
+        )
+        report = await researcher.run()
 
     elif report_type == ReportType.DetailedReport.value:
         researcher = DetailedReport(

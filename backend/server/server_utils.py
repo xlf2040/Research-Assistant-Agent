@@ -355,6 +355,8 @@ async def execute_multi_agents(manager) -> Any:
 
 async def handle_websocket_communication(websocket, manager):
     running_task: asyncio.Task | None = None
+    # Track active PaperSubmissionReport for select_journal handling
+    active_paper_submission_report = None
 
     def run_long_running_task(awaitable: Awaitable) -> asyncio.Task:
         async def safe_run():
@@ -383,6 +385,20 @@ async def handle_websocket_communication(websocket, manager):
 
         return asyncio.create_task(safe_run())
 
+    async def handle_start_with_tracking(websocket, data, manager):
+        nonlocal active_paper_submission_report
+        json_data = json.loads(data[6:])
+        report_type = json_data.get("report_type", "")
+        if report_type == "paper_submission":
+            # Create the report instance first so select_journal can resolve it
+            # even while the task is still running (awaiting journal selection)
+            report_instance = await _create_paper_submission_report(websocket, json_data)
+            active_paper_submission_report = report_instance
+            # Now run it (this will block until complete, including journal selection wait)
+            await _execute_paper_submission(websocket, report_instance, json_data)
+        else:
+            await handle_start_command(websocket, data, manager)
+
     try:
         while True:
             try:
@@ -391,8 +407,21 @@ async def handle_websocket_communication(websocket, manager):
                 
                 if data == "ping":
                     await websocket.send_text("pong")
+                elif data.strip().startswith("select_journal"):
+                    # Handle journal selection during paper_submission flow
+                    if active_paper_submission_report:
+                        try:
+                            journal_data = json.loads(data[len("select_journal"):].strip())
+                            journal_id = journal_data.get("journal_id", "")
+                            logger.info(f"Processing select_journal: {journal_id}")
+                            active_paper_submission_report.resolve_journal_selection(journal_id)
+                        except (json.JSONDecodeError, AttributeError) as e:
+                            logger.warning(f"Invalid select_journal message: {e}")
+                    else:
+                        logger.warning("select_journal received but no active paper_submission task")
                 elif running_task and not running_task.done():
-                    # discard any new request if a task is already running
+                    # Allow select_journal even while task is running (handled above)
+                    # discard any other new request if a task is already running
                     logger.warning(
                         f"Received request while task is already running. Request data preview: {data[: min(20, len(data))]}..."
                     )
@@ -407,7 +436,7 @@ async def handle_websocket_communication(websocket, manager):
                 elif data.strip().startswith("start"):
                     logger.info(f"Processing start command")
                     running_task = run_long_running_task(
-                        handle_start_command(websocket, data, manager)
+                        handle_start_with_tracking(websocket, data, manager)
                     )
                 elif data.strip().startswith("human_feedback"):
                     logger.info(f"Processing human_feedback command")
@@ -432,6 +461,55 @@ async def handle_websocket_communication(websocket, manager):
         if running_task and not running_task.done():
             running_task.cancel()
 
+
+async def _create_paper_submission_report(websocket, json_data):
+    """Create a PaperSubmissionReport instance (without running it)."""
+    from backend.report_type import PaperSubmissionReport
+
+    task = json_data.get("task", "Paper Submission Analysis")
+    paper_filename = ""
+    filenames = json_data.get("filenames", [])
+    if filenames:
+        paper_filename = filenames[0]
+
+    config_path = os.environ.get("CONFIG_PATH", "default")
+    headers = json_data.get("headers", {})
+
+    logs_handler = CustomLogsHandler(websocket, task)
+    await logs_handler.send_json({
+        "query": task,
+        "sources": [],
+        "context": [],
+        "report": ""
+    })
+
+    report_instance = PaperSubmissionReport(
+        query=task,
+        paper_filename=paper_filename,
+        websocket=logs_handler,
+        config_path=config_path,
+        headers=headers,
+    )
+    # Attach logs_handler for later use
+    report_instance._logs_handler = logs_handler
+    return report_instance
+
+
+async def _execute_paper_submission(websocket, report_instance, json_data):
+    """Execute the paper submission flow and generate output files."""
+    task = json_data.get("task", "Paper Submission Analysis")
+
+    report = await report_instance.run()
+    report = str(report)
+
+    # Generate report files
+    sanitized_filename = sanitize_filename(f"task_{int(time.time())}_{task}")
+    file_paths = await generate_report_files(report, sanitized_filename)
+    logs_handler = getattr(report_instance, '_logs_handler', None)
+    if logs_handler:
+        file_paths["json"] = os.path.relpath(logs_handler.log_file)
+    await send_file_paths(websocket, file_paths)
+
 def extract_command_data(json_data: Dict) -> tuple:
     return (
         json_data.get("task"),
@@ -447,4 +525,5 @@ def extract_command_data(json_data: Dict) -> tuple:
         json_data.get("mcp_configs", []),
         json_data.get("max_search_results"),
         json_data.get("filenames"),
+        json_data.get("paper_filename", ""),
     )
