@@ -217,7 +217,7 @@ dependencies = [
 
 [project.optional-dependencies]
 requirements-txt = [
-    "ag2[openai]>=0.11.2",
+    "ag2[openai]>=0.13.4",
     "arxiv_client",
     "azure-storage-blob",
     "duckduckgo_search",
